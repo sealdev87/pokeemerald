@@ -396,6 +396,12 @@ LittlerootTown_EventScript_TownSign::
 	msgbox LittlerootTown_Text_TownSign, MSGBOX_SIGN
 	end
 
+LittlerootTown_TestMenu::
+	lockall
+	special Craft_ShowMainMenu
+	releaseall
+	end
+
 LittlerootTown_EventScript_BirchsLabSign::
 	msgbox LittlerootTown_Text_ProfBirchsLab, MSGBOX_SIGN
 	end
