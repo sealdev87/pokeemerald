@@ -401,6 +401,29 @@ LittlerootTown_TestMenu::
 	special Craft_ShowMainMenu
 	releaseall
 	end
+@	message Ready_To_Craft
+@	waitmessage
+@	multichoicegrid 2, 10, MULTI_CRAFT_LIST_BUFFER, 2, FALSE
+@	switch VAR_RESULT
+@	case 0, Craft1
+@	case 1, Craft1
+@	case 2, Craft1
+@	case 3, Craft1
+@	case MULTI_B_PRESSED, Craft_End
+@	end
+
+Ready_To_Craft:
+	.string "Here we go...$"
+Craft1::
+	msgbox Craft1_Message, MSGBOX_DEFAULT
+	goto LittlerootTown_TestMenu
+	end
+Craft1_Message:
+	.string "First craft message.$"
+
+Craft_End::
+	releaseall
+	end
 
 LittlerootTown_EventScript_BirchsLabSign::
 	msgbox LittlerootTown_Text_ProfBirchsLab, MSGBOX_SIGN

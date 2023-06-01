@@ -776,13 +776,21 @@ static const struct MenuAction MultichoiceList_Exit[] =
     {gText_Exit},
 };
 
+static const struct MenuAction MultichoiceList_CraftBuffer[] =
+{
+    {gText_NoCraftItem},
+    {gText_NoCraftItem},
+    {gText_NoCraftItem},
+    {gText_NoCraftItem},
+};
+
 struct MultichoiceListStruct
 {
     const struct MenuAction *list;
     u8 count;
 };
 
-static const struct MultichoiceListStruct sMultichoiceLists[] =
+const struct MultichoiceListStruct gMultichoiceLists[] =
 {
     [MULTI_BRINEY_ON_DEWFORD]          = MULTICHOICE(MultichoiceList_BrineyOnDewford),
     [MULTI_PC]                         = MULTICHOICE(MultichoiceList_Exit),
@@ -793,7 +801,7 @@ static const struct MultichoiceListStruct sMultichoiceLists[] =
     [MULTI_BASE_PC_WITH_REGISTRY]      = MULTICHOICE(MultichoiceList_BasePCWithRegistry),
     [MULTI_REGISTER_MENU]              = MULTICHOICE(MultichoiceList_RegisterMenu),
     [MULTI_SSTIDAL_LILYCOVE]           = MULTICHOICE(MultichoiceList_Exit),
-    [MULTI_UNUSED_9]                   = MULTICHOICE(MultichoiceList_Exit),
+    [MULTI_CRAFT_LIST_BUFFER]          = MULTICHOICE(MultichoiceList_CraftBuffer),
     [MULTI_UNUSED_10]                  = MULTICHOICE(MultichoiceList_Exit),
     [MULTI_FRONTIER_PASS_INFO]         = MULTICHOICE(MultichoiceList_FrontierPassInfo),
     [MULTI_BIKE]                       = MULTICHOICE(MultichoiceList_Bike),
