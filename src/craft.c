@@ -11,6 +11,7 @@
 #include "list_menu.h"
 #include "main.h"
 #include "menu.h"
+#include "overworld.h"
 #include "palette.h"
 #include "script.h"
 #include "sound.h"
@@ -217,6 +218,8 @@ static void MoveSelectionDisplayMoveNames(void) - after selecting Fight, add nam
 static void HandleInputChooseMove(void)
 static void HandleMoveSwitching(void) - after choosing to start switching moves
 static void PlayerHandleYesNoBox(void)
+SaveCallback - hopping back and forth between menus
+
 
 width = w=18, left = 2, top=55
 cook = w=8, left=21, top=55
@@ -264,9 +267,9 @@ void Craft_ShowMainMenu(void){
     u8 left, top, width, columnCount, taskId, rowCount;
     u8 multichoiceId;
 
-    left = 2;
+    left = 0;
     top = 10;
-    width = 18;
+    width = 9;
     columnCount = 2;
 
     multichoiceId = 0;
@@ -282,12 +285,17 @@ void Craft_ShowMainMenu(void){
 
         taskId = CreateTask(Task_HandleCraftMenuInput, 80);
 
-        LoadMessageBoxAndBorderGfx();
-        gTasks[taskId].tWindowId = CreateWindowFromRect(left, top, width, rowCount * 2);
+        //FreeAllWindowBuffers();
+        //CleanupOverworldWindowsAndTilemaps(); //definitely not this
+
+        LoadMessageBoxAndBorderGfx(); //gets red border if not
+        
+        gTasks[taskId].tWindowId = CreateWindowFromRect(left, top, columnCount * width, rowCount * 2);
+        //ClearDialogWindowAndFrameToTransparent(gTasks[taskId].tWindowId,TRUE); //no discernable influence
         SetStandardWindowBorderStyle(gTasks[taskId].tWindowId, FALSE);
-        PrintMenuGridTable(gTasks[taskId].tWindowId, width / 2, columnCount, rowCount, sCountCraftItemConvert[multichoiceId].list);
-        InitMenuActionGrid(gTasks[taskId].tWindowId, width / 2, columnCount, rowCount, 0);
-        CopyWindowToVram(gTasks[taskId].tWindowId, COPYWIN_FULL);
+        PrintMenuGridTable(gTasks[taskId].tWindowId, width * 8, columnCount, rowCount, sCountCraftItemConvert[multichoiceId].list);
+        InitMenuActionGrid(gTasks[taskId].tWindowId, width * 8, columnCount, rowCount, 0);
+        CopyWindowToVram(gTasks[taskId].tWindowId, COPYWIN_MAP);
         //return TRUE;
     }
 }
