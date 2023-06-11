@@ -133,7 +133,7 @@ static void DebugAction_Cancel(u8 taskId)
 
 static const struct WindowTemplate sCraftWindowTemplates[] =
 {
-    [C_WIN_ITEM_NAME_1] = {
+/*    [C_WIN_ITEM_NAME_1] = {
         .bg = 0,
         .tilemapLeft = 2,
         .tilemapTop = 55,
@@ -168,6 +168,16 @@ static const struct WindowTemplate sCraftWindowTemplates[] =
         .height = 2,
         .paletteNum = 5,
         .baseBlock = 0x0330,
+    },
+*/
+    [C_WIN_CRAFT_TABLE] = {
+        .bg = 0,
+        .tilemapLeft = 1,
+        .tilemapTop = 15,
+        .width = 18,
+        .height = 4,
+        .paletteNum = 15,
+        .baseBlock = 0x0001
     },
     [C_WIN_DUMMY] = {
         .bg = 0,
@@ -241,14 +251,14 @@ static const struct CountCraftItemStruct sCountCraftItemConvert[] = {
     [0] = MULTICHOICE(MultichoiceList_CraftEmpty),
 };
 
-#define tLeft           data[0]
-#define tTop            data[1]
-#define tRight          data[2]
-#define tBottom         data[3]
-#define tIgnoreBPress   data[4]
-#define tDoWrap         data[5]
-#define tWindowId       data[6]
-#define tMultichoiceId  data[7]
+//#define tLeft           data[0]
+//#define tTop            data[1]
+//#define tRight          data[2]
+//#define tBottom         data[3]
+//#define tIgnoreBPress   data[4]
+//#define tDoWrap         data[5]
+//#define tWindowId       data[6]
+//#define tMultichoiceId  data[7]
 
 /*bool32 CraftMenu_Init(void){
     
@@ -261,41 +271,60 @@ static const struct CountCraftItemStruct sCountCraftItemConvert[] = {
     }
 }*/
 
+/* //taken from txregistereditemsmenu
+static u32 Craft_InitWindows(void)
+{
+    u32 *windowId = &(gTxRegItemsMenu->windowIds[0]);
+    if (*windowId == WINDOW_NONE)
+    {
+        *windowId = AddWindow(&TxRegItemsMenu_WindowTemplates[0]);
+        DrawStdFrameWithCustomTileAndPalette(*windowId, FALSE, 0x214, 0xE);
+        ScheduleBgCopyTilemapToVram(0);
+    }
+    return *windowId;
+}
+*/
+
 //modified from src/script_menu.c ScriptMenu_MultichoiceGrid
 void Craft_ShowMainMenu(void){
     
+    struct WindowTemplate CraftTableWindow = sCraftWindowTemplates[C_WIN_CRAFT_TABLE];
     u8 left, top, width, columnCount, taskId, rowCount;
-    u8 multichoiceId;
+    u8 multichoiceId, windowId;
 
-    left = 0;
-    top = 10;
+    //Grid parameters
     width = 9;
     columnCount = 2;
+    rowCount = sCountCraftItemConvert[multichoiceId].count / columnCount;
 
+
+    //Option List Id
     multichoiceId = 0;
 
+    //LockPlayerFieldControls(); //not doing anything
+
     if (FuncIsActiveTask(Task_HandleCraftMenuInput) == TRUE){
-        //return;
+        return;
     }
     else{
+        
         gSpecialVar_Result = 0xFF;
 
-        //left = ScriptMenu_AdjustLeftCoordFromWidth(left, columnCount * width);
-        rowCount = sCountCraftItemConvert[multichoiceId].count / columnCount;
-
         taskId = CreateTask(Task_HandleCraftMenuInput, 80);
+        windowId = AddWindow(&CraftTableWindow);
 
-        //FreeAllWindowBuffers();
-        //CleanupOverworldWindowsAndTilemaps(); //definitely not this
+        LoadMessageBoxAndBorderGfx(); //gets red border if not & cuts off regardless
+        //InitStandardTextBoxWindows(); //no change
 
-        LoadMessageBoxAndBorderGfx(); //gets red border if not
-        
-        gTasks[taskId].tWindowId = CreateWindowFromRect(left, top, columnCount * width, rowCount * 2);
-        //ClearDialogWindowAndFrameToTransparent(gTasks[taskId].tWindowId,TRUE); //no discernable influence
-        SetStandardWindowBorderStyle(gTasks[taskId].tWindowId, FALSE);
-        PrintMenuGridTable(gTasks[taskId].tWindowId, width * 8, columnCount, rowCount, sCountCraftItemConvert[multichoiceId].list);
-        InitMenuActionGrid(gTasks[taskId].tWindowId, width * 8, columnCount, rowCount, 0);
-        CopyWindowToVram(gTasks[taskId].tWindowId, COPYWIN_MAP);
+        InitWindows(sCraftWindowTemplates);
+        //InitTextBoxGfxAndPrinters();
+
+        gTasks[taskId].data[1] = windowId;
+    
+        DrawStdWindowFrame(gTasks[taskId].data[1], FALSE);
+        PrintMenuGridTable(gTasks[taskId].data[1], width * 8, columnCount, rowCount, sCountCraftItemConvert[multichoiceId].list);
+        InitMenuActionGrid(gTasks[taskId].data[1], width * 8, columnCount, rowCount, 0);
+        CopyWindowToVram(gTasks[taskId].data[1], COPYWIN_FULL);
         //return TRUE;
     }
 }
@@ -316,7 +345,31 @@ static void Task_HandleCraftMenuInput(u8 taskId){
         break;
     }
 
-    ClearToTransparentAndRemoveWindow(tWindowId);
+    Craft_DestroyMainMenu(taskId);
+
+
+    //UnlockPlayerFieldControls();
+    //ClearStdWindowAndFrame(data[1], TRUE);
+    //ClearToTransparentAndRemoveWindow(tWindowId);
+    //ClearWindowTilemap(tWindowId);
+    //ScheduleBgCopyTilemapToVram(0);
+    //RemoveWindow(data[1]);
+    //tWindowId = WINDOW_NONE;
+    //ClearDialogWindowAndFrameToTransparent(tWindowId, TRUE);
+    //FreeAllWindowBuffers();
+    //DestroyTask(taskId);
+    //ScriptContext_Enable();
+}
+
+static void Craft_DestroyMainMenu(u8 taskId)
+{
+    //DestroyListMenuTask(gTasks[taskId].data[0], NULL, NULL);
+    FreeAllWindowBuffers();
+    ClearStdWindowAndFrame(gTasks[taskId].data[1], TRUE);
+    RemoveWindow(gTasks[taskId].data[1]);
     DestroyTask(taskId);
     ScriptContext_Enable();
 }
+
+//#undef tWindowId
+

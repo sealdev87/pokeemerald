@@ -4,13 +4,14 @@
 //extern const u8 *const gStdStrings[];
 
 // Window IDs
+#define C_WIN_CRAFT_TABLE         1 // Crafting Table
 #define C_WIN_ITEM_NAME_1         1 // Top left
 #define C_WIN_ITEM_NAME_2         2 // Top right
 #define C_WIN_ITEM_NAME_3         3 // Bottom left
 #define C_WIN_ITEM_NAME_4         4 // Bottom right
-#define C_WIN_DUMMY               5
-#define C_WIN_CRAFT_PROMPT        6 // Switch which?
-#define C_WIN_YESNO               7
+#define C_WIN_DUMMY               2
+#define C_WIN_CRAFT_PROMPT        3 // Ready to craft? Press start!
+#define C_WIN_YESNO               4
 
 // This is from ketsuban's debug_menu_tutorial (https://gist.github.com/ketsuban/1751fd9cdca331831fe4da9283675465)
 #define DEBUG_MAIN_MENU_HEIGHT 6
@@ -26,5 +27,7 @@ static void DebugTask_HandleMainMenuInput(u8);
 bool32 CraftMenu_Init(void);
 void Craft_ShowMainMenu(void);
 static void Task_HandleCraftMenuInput(u8 taskId);
+static void Craft_DestroyMainMenu(u8);
+
 
 #endif // GUARD_CRAFT_H
