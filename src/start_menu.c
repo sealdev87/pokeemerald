@@ -462,6 +462,7 @@ static bool32 PrintStartMenuActions(s8 *pIndex, u32 count)
 
 static bool32 InitStartMenuStep(void)
 {
+    //list actions, draw window, check for extra windows, print menu actions, place cursor, draw everything
     s8 state = sInitStartMenuData[0];
 
     switch (state)
@@ -543,6 +544,7 @@ void ShowReturnToFieldStartMenu(void)
 
 void Task_ShowStartMenu(u8 taskId)
 {
+                //pointer for global task location, acts as state for switch
     struct Task *task = &gTasks[taskId];
 
     switch(task->data[0])
@@ -1404,7 +1406,7 @@ void SaveForBattleTowerLink(void)
 static void HideStartMenuWindow(void)
 {
     ClearStdWindowAndFrame(GetStartMenuWindowId(), TRUE);
-    RemoveStartMenuWindow();
+    RemoveStartMenuWindow(); //in menu.c
     ScriptUnfreezeObjectEvents();
     UnlockPlayerFieldControls();
 }

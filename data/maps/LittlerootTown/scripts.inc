@@ -397,8 +397,13 @@ LittlerootTown_EventScript_TownSign::
 	end
 
 LittlerootTown_TestMenu::
-	lockall
-	special Craft_ShowMainMenu
+@	lockall
+@	special ShowStartMenu
+	message Ready_To_Craft
+	waitbuttonpress
+	closemessage
+	special CraftMenu_Init
+	waitstate
 	releaseall
 	end
 @	message Ready_To_Craft

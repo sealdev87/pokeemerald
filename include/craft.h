@@ -24,8 +24,8 @@ static void DebugAction_Cancel(u8);
 static void DebugTask_HandleMainMenuInput(u8);
 
 // On to the crafting stuff!
-bool32 CraftMenu_Init(void);
-void Craft_ShowMainMenu(void);
+void CraftMenu_Init(void);
+bool32 Craft_ShowMainMenu(void);
 static void Task_HandleCraftMenuInput(u8 taskId);
 static void Craft_DestroyMainMenu(u8);
 
