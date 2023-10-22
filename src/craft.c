@@ -12,11 +12,13 @@
 #include "list_menu.h"
 #include "main.h"
 #include "menu.h"
+#include "menu_helpers.h"
 #include "overworld.h"
 #include "palette.h"
 #include "script.h"
 #include "sound.h"
 #include "strings.h"
+#include "string_util.h"
 #include "task.h"
 #include "text.h"
 #include "constants/field_specials.h"
@@ -134,6 +136,26 @@ static void DebugAction_Cancel(u8 taskId)
 
 
 
+
+
+
+
+
+
+
+static const u8 sText_SlotTest[] = _("Option {STR_VAR_1}!");
+
+enum CraftWindows {
+    WINDOW_CRAFT_TABLE,
+    WINDOW_CRAFT_INFO,
+    WINDOW_CRAFT_YESNO,
+    WINDOW_CRAFT_READYUP,
+    WINDOW_CRAFT_SOUSCHEFS,
+};
+
+#define WINDOW_TILE 313
+static const struct WindowTemplate sDummyWindowTemplates[] = {DUMMY_WIN_TEMPLATE};
+
 static const struct WindowTemplate sCraftWindowTemplates[] = {
 /*    [C_WIN_ITEM_NAME_1] = {
         .bg = 0,
@@ -172,7 +194,7 @@ static const struct WindowTemplate sCraftWindowTemplates[] = {
         .baseBlock = 0x0330,
     },
 */
-    [C_WIN_CRAFT_TABLE] = {
+    [WINDOW_CRAFT_TABLE] = {
         .bg = 0,
         .tilemapLeft = 1,
         .tilemapTop = 15,
@@ -181,32 +203,23 @@ static const struct WindowTemplate sCraftWindowTemplates[] = {
         .paletteNum = 15,
         .baseBlock = 313,
     },
-    [C_WIN_DUMMY] = {
-        .bg = 0,
-        .tilemapLeft = 21,
-        .tilemapTop = 57,
-        .width = 0,
-        .height = 0,
-        .paletteNum = 5,
-        .baseBlock = 0x0298,
-    },
-    [C_WIN_CRAFT_PROMPT] = {
+    [WINDOW_CRAFT_INFO] = {
         .bg = 0,
         .tilemapLeft = 21,
         .tilemapTop = 55,
         .width = 8,
         .height = 4,
         .paletteNum = 5,
-        .baseBlock = 0x02b0,
+        .baseBlock = 313 + 8*4,
     },
-    [C_WIN_YESNO] = {
+    [WINDOW_CRAFT_YESNO] = {
         .bg = 0,
         .tilemapLeft = 26,
         .tilemapTop = 9,
         .width = 3,
         .height = 4,
         .paletteNum = 5,
-        .baseBlock = 0x0100,
+        .baseBlock = 313 + 8*4 + 3*4,
     },
     DUMMY_WIN_TEMPLATE
 };
@@ -239,6 +252,19 @@ height = 4
 
 */
 
+static const u16 Craft_ItemList[4];
+
+static const u8 Craft_GetItemName(u16 itemId){
+    if(itemId == ITEM_NONE || itemId > ITEM_OLD_SEA_MAP){
+        StringCopy(gStringVar2, gText_Dash);
+    }
+    else{
+        StringExpandPlaceholders(gStringVar2,sText_SlotTest);
+        //StringCopy(gStringVar1, ItemId_GetName(itemId));
+    }
+}
+
+//Have to use gStringVars??
 static const struct MenuAction MultichoiceList_CraftEmpty[] = {
     {gText_Dash},
     {gText_Dash},
@@ -267,7 +293,28 @@ void CraftMenu_Init(void){
     //FreezeObjectEvents();
     //PlayerFreeze();
     //StopPlayerAvatar();
+    
+    //NOTE: freeze if used by Mess Kit item in the overworld, otherwise all cratt situations are controlled and
+    //       miss accidental event interaction
+
+
+
     LockPlayerFieldControls();
+
+    //InitWindows(sDummyWindowTemplates);
+    /*{
+        int i, baseBlock;
+        struct WindowTemplate template;
+        baseBlock = WINDOW_TILE;
+        for (i = 0; i < ARRAY_COUNT(sCraftWindowTemplates); ++i)
+        {
+            template = sCraftWindowTemplates[i];
+            template.baseBlock = baseBlock;
+            //AddWindow(&template);
+            baseBlock += template.width * template.height;
+        }
+    }*/
+
 
 
     if (Craft_ShowMainMenu() == TRUE){
@@ -293,17 +340,14 @@ static u32 Craft_InitWindows(void)
 }
 */
 
+
+
 //modified from src/script_menu.c ScriptMenu_MultichoiceGrid
 bool32 Craft_ShowMainMenu(void){
     
-    struct WindowTemplate CraftTableWindow = sCraftWindowTemplates[C_WIN_CRAFT_TABLE];
-    u8 left, top, width, columnCount, taskId, rowCount;
+    struct WindowTemplate CraftTableWindow = sCraftWindowTemplates[WINDOW_CRAFT_TABLE];
+    //u8 left, top, width, columnCount, taskId, rowCount;
     u8 multichoiceId, windowId, inputTaskId;
-
-    //Grid parameters
-    width = 9;
-    columnCount = 2;
-    rowCount = 2; 
 
     //Option List Id
     multichoiceId = 0;
@@ -313,42 +357,112 @@ bool32 Craft_ShowMainMenu(void){
     }
     else{
         
-        gSpecialVar_Result = 0xFF;
+        if(gSpecialVar_Result < 1 || gSpecialVar_Result > 4){
+            gSpecialVar_Result = 1;
+        }
 
-        //InitWindows(sCraftWindowTemplates);
+        ConvertIntToDecimalStringN(gStringVar1, gSpecialVar_Result,STR_CONV_MODE_LEFT_ALIGN,1);
+
+        //InitWindows(sCraftWindowTemplates); //If used, message boxes misallign?
 
         windowId = AddWindow(&CraftTableWindow);
         LoadMessageBoxAndBorderGfx(); //gets red border if not & cuts off regardless    
         DrawStdWindowFrame(windowId, FALSE);
 
-        PrintMenuGridTable(windowId, width * 8, columnCount, rowCount, sCountCraftItemConvert[multichoiceId].list);
-        InitMenuActionGrid(windowId, width * 8, columnCount, rowCount, 0);
+        PrintMenuGridTable(windowId, 9 * 8, 2, 2, sCountCraftItemConvert[multichoiceId].list);
+        InitMenuActionGrid(windowId, 9 * 8, 2, 2, gSpecialVar_Result - 1);
         
-        CopyWindowToVram(windowId, 3);
+        CopyWindowToVram(windowId, COPYWIN_FULL);
 
         inputTaskId = CreateTask(Task_HandleCraftMenuInput, 80);
         gTasks[inputTaskId].data[1] = windowId;
 
-        //return TRUE;
+        return TRUE;
     }
 }
 
+static void RefreshCraftTable(void){
+    
+    FillWindowPixelBuffer(WINDOW_CRAFT_TABLE, PIXEL_FILL(TEXT_COLOR_WHITE));
+
+}
+
+static const u8 sWindowColors[3] = { TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY };
+
+static void UpdateCraftSlot(void){
+    /*If item = ITEM_NONE then display craft instructions "A to Add Item, Start to Craft"
+     *Go to Bag, choose item for gSpecialVar_0x8000-3, update with name (refresh)
+     *If item = anything else, ask SWAP/BAG/READY/CANCEL*/
+
+    RefreshCraftTable();
+    StringExpandPlaceholders(gStringVar4, sText_SlotTest);
+    AddTextPrinterParameterized3(WINDOW_CRAFT_TABLE, FONT_NARROW, 0, 1, sWindowColors, TEXT_SKIP_DRAW, gStringVar4);
+
+    PutWindowTilemap(WINDOW_CRAFT_TABLE);
+    CopyWindowToVram(WINDOW_CRAFT_TABLE, COPYWIN_GFX);
+
+    ScheduleBgCopyTilemapToVram(0);
+}
+
+//Detect cursor pos change for refresh info window, maybe delete
+/*static EWRAM_DATA struct Menu sMenu = {0};
+static s8 Craft_ProcessGridChange(void){
+
+    u8 oldPos = sMenu.cursorPos;
+
+    
+    if (JOY_NEW(DPAD_UP))
+    {
+        if (oldPos != ChangeGridMenuCursorPosition(0, -1))
+            PlaySE(SE_SELECT);
+        return MENU_NOTHING_CHOSEN;
+    }
+    else if (JOY_NEW(DPAD_DOWN))
+    {
+        if (oldPos != ChangeGridMenuCursorPosition(0, 1))
+            PlaySE(SE_SELECT);
+        return MENU_NOTHING_CHOSEN;
+    }
+    else if (JOY_NEW(DPAD_LEFT) || GetLRKeysPressed() == MENU_L_PRESSED)
+    {
+        if (oldPos != ChangeGridMenuCursorPosition(-1, 0))
+            PlaySE(SE_SELECT);
+        return MENU_NOTHING_CHOSEN;
+    }
+    else if (JOY_NEW(DPAD_RIGHT) || GetLRKeysPressed() == MENU_R_PRESSED)
+    {
+        if (oldPos != ChangeGridMenuCursorPosition(1, 0))
+            PlaySE(SE_SELECT);
+        return MENU_NOTHING_CHOSEN;
+    }
+
+    return MENU_NOTHING_CHOSEN;
+}
+*/
+
 static void Task_HandleCraftMenuInput(u8 taskId){
     s16 *data = gTasks[taskId].data;
-    s8 cursorPos = Menu_GetCursorPos();
+    //s8 cursorPos = Menu_GetCursorPos();
     s8 selection = Menu_ProcessGridInput();
+    //if they pressed anything at all ("newkeys = true" or something [something = if(JOY_NEW(DPAD_ANY))] ) refresh little info window
+    if(JOY_NEW(DPAD_ANY)){
+        UpdateCraftSlot();
+    }
 
     switch (selection){
     case MENU_NOTHING_CHOSEN:
         return;
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+        
+        //gSpecialVar_Result = selection;
     case MENU_B_PRESSED:
-        PlaySE(SE_SELECT);
-        Craft_DestroyMainMenu(taskId);
-        gSpecialVar_Result = MULTI_B_PRESSED;
-        break;
     default:
-        PlaySE(SE_LEDGE); 
         gSpecialVar_Result = selection;
+        Craft_DestroyMainMenu(taskId);
+    //    gSpecialVar_Result = MULTI_B_PRESSED;
         break;
     }
 
@@ -366,7 +480,7 @@ static void Craft_DestroyMainMenu(u8 taskId)
         windowId = WINDOW_NONE;
     }
 
-    ScriptUnfreezeObjectEvents();
+    //ScriptUnfreezeObjectEvents();
     UnlockPlayerFieldControls();
     
     DestroyTask(taskId);

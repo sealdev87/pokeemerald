@@ -394,20 +394,29 @@ LittlerootTown_EventScript_GoSaveBirchTrigger::
 
 LittlerootTown_EventScript_TownSign::
 	msgbox LittlerootTown_Text_TownSign, MSGBOX_SIGN
+	
+	msgbox Ready_To_Craft, MSGBOX_YESNO
+	goto_if_eq VAR_RESULT, YES, LittlerootTown_TestMenu
+	goto_if_eq VAR_RESULT, NO, Craft_End
 	end
 
 LittlerootTown_TestMenu::
 @	lockall
 @	special ShowStartMenu
-	message Ready_To_Craft
-	waitbuttonpress
+@	message Ready_To_Craft
+@	waitbuttonpress
 	closemessage
+	delay 8
 	special CraftMenu_Init
 	waitstate
-	releaseall
-	end
-@	message Ready_To_Craft
-@	waitmessage
+	goto_if_gt VAR_RESULT, 3, Craft_End
+	
+	addvar VAR_RESULT, 1
+	buffernumberstring STR_VAR_1, VAR_RESULT
+	goto Craft1
+
+@	releaseall
+@	end
 @	multichoicegrid 2, 10, MULTI_CRAFT_LIST_BUFFER, 2, FALSE
 @	switch VAR_RESULT
 @	case 0, Craft1
@@ -415,16 +424,18 @@ LittlerootTown_TestMenu::
 @	case 2, Craft1
 @	case 3, Craft1
 @	case MULTI_B_PRESSED, Craft_End
-@	end
+	releaseall
+	end
 
 Ready_To_Craft:
-	.string "Here we go...$"
+	.string "Want to craft something?$"
 Craft1::
 	msgbox Craft1_Message, MSGBOX_DEFAULT
 	goto LittlerootTown_TestMenu
 	end
+
 Craft1_Message:
-	.string "First craft message.$"
+	.string "Option {STR_VAR_1}.$"
 
 Craft_End::
 	releaseall

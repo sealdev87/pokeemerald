@@ -708,7 +708,7 @@ static bool8 StartMenuSaveCallback(void)
     if (InBattlePyramid())
         RemoveExtraStartMenuWindows();
 
-    gMenuCallback = SaveStartCallback; // Display save menu
+    gMenuCallback = SaveStartCallback; //craft Display save menu
 
     return FALSE;
 }
@@ -887,7 +887,7 @@ void SaveGame(void)
 static void ShowSaveMessage(const u8 *message, u8 (*saveCallback)(void))
 {
     StringExpandPlaceholders(gStringVar4, message);
-    LoadMessageBoxAndFrameGfx(0, TRUE);
+    LoadMessageBoxAndFrameGfx(0, TRUE); //craft... could be useful for in-process messaging
     AddTextPrinterForMessage_2(TRUE);
     sSavingComplete = TRUE;
     sSaveDialogCallback = saveCallback;
@@ -960,7 +960,7 @@ static bool8 SaveErrorTimer(void)
     return FALSE;
 }
 
-static u8 SaveConfirmSaveCallback(void)
+static u8 SaveConfirmSaveCallback(void) //craft
 {
     ClearStdWindowAndFrame(GetStartMenuWindowId(), FALSE);
     RemoveStartMenuWindow();
@@ -1314,7 +1314,7 @@ static void Task_SaveAfterLinkBattle(u8 taskId)
     }
 }
 
-static void ShowSaveInfoWindow(void)
+static void ShowSaveInfoWindow(void) //craft
 {
     struct WindowTemplate saveInfoWindow = sSaveInfoWindowTemplate;
     u8 gender;

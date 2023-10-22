@@ -2943,7 +2943,7 @@ static void ChooseTypeOfMoveUsedString(u8 *dst)
     }
 }
 
-void BattlePutTextOnWindow(const u8 *text, u8 windowId)
+void BattlePutTextOnWindow(const u8 *text, u8 windowId) //CRAFT
 {
     const struct BattleWindowText *textInfo = sBattleTextOnWindowsInfo[gBattleScripting.windowsType];
     bool32 copyToVram;
