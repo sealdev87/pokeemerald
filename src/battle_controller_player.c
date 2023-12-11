@@ -230,7 +230,7 @@ static void CompleteOnBankSpritePosX_0(void)
         PlayerBufferExecCompleted();
 }
 
-static void HandleInputChooseAction(void)
+static void HandleInputChooseAction(void) //craft
 {
     u16 itemId = gBattleBufferA[gActiveBattler][2] | (gBattleBufferA[gActiveBattler][3] << 8);
 
@@ -664,7 +664,7 @@ static u32 HandleMoveInputUnused(void)
     return var;
 }
 
-static void HandleMoveSwitching(void)
+static void HandleMoveSwitching(void) //craft
 {
     u8 perMovePPBonuses[MAX_MON_MOVES];
     struct ChooseMoveStruct moveStruct;

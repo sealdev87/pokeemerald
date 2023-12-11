@@ -400,6 +400,12 @@ LittlerootTown_EventScript_TownSign::
 	goto_if_eq VAR_RESULT, NO, Craft_End
 	end
 
+LittlerootTown_Craft::
+	special ShowCraftMenu
+	waitstate
+	releaseall
+	end
+
 LittlerootTown_TestMenu::
 @	lockall
 @	special ShowStartMenu

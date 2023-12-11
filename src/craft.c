@@ -146,6 +146,7 @@ static void DebugAction_Cancel(u8 taskId)
 static const u8 sText_SlotTest[] = _("Option {STR_VAR_1}!");
 
 enum CraftWindows {
+    WINDOW_CRAFT_MSG,
     WINDOW_CRAFT_TABLE,
     WINDOW_CRAFT_INFO,
     WINDOW_CRAFT_YESNO,
@@ -194,6 +195,15 @@ static const struct WindowTemplate sCraftWindowTemplates[] = {
         .baseBlock = 0x0330,
     },
 */
+    [WINDOW_CRAFT_MSG] = {
+        .bg = 0,
+        .tilemapLeft = 2,
+        .tilemapTop = 15,
+        .width = 27,
+        .height = 4,
+        .paletteNum = 15,
+        .baseBlock = 1
+    },    
     [WINDOW_CRAFT_TABLE] = {
         .bg = 0,
         .tilemapLeft = 1,
@@ -201,7 +211,7 @@ static const struct WindowTemplate sCraftWindowTemplates[] = {
         .width = 18,
         .height = 4,
         .paletteNum = 15,
-        .baseBlock = 313,
+        .baseBlock = 1 + 27*4,
     },
     [WINDOW_CRAFT_INFO] = {
         .bg = 0,
@@ -210,7 +220,7 @@ static const struct WindowTemplate sCraftWindowTemplates[] = {
         .width = 8,
         .height = 4,
         .paletteNum = 5,
-        .baseBlock = 313 + 8*4,
+        .baseBlock = 1 + 18*4 + 27*4,
     },
     [WINDOW_CRAFT_YESNO] = {
         .bg = 0,
@@ -219,7 +229,7 @@ static const struct WindowTemplate sCraftWindowTemplates[] = {
         .width = 3,
         .height = 4,
         .paletteNum = 5,
-        .baseBlock = 313 + 8*4 + 3*4,
+        .baseBlock = 1 + 18*4 + 8*4 + 27*4,
     },
     DUMMY_WIN_TEMPLATE
 };
@@ -266,7 +276,7 @@ static const u8 Craft_GetItemName(u16 itemId){
 
 //Have to use gStringVars??
 static const struct MenuAction MultichoiceList_CraftEmpty[] = {
-    {gText_Dash},
+    {gStringVar4},
     {gText_Dash},
     {gText_Dash},
     {gText_Dash},
@@ -361,9 +371,10 @@ bool32 Craft_ShowMainMenu(void){
             gSpecialVar_Result = 1;
         }
 
+        StringCopy(gStringVar4, gText_Dash);
         ConvertIntToDecimalStringN(gStringVar1, gSpecialVar_Result,STR_CONV_MODE_LEFT_ALIGN,1);
 
-        //InitWindows(sCraftWindowTemplates); //If used, message boxes misallign?
+        InitWindows(sCraftWindowTemplates); //FreeAllWindowBuffers messes up other windows after?
 
         windowId = AddWindow(&CraftTableWindow);
         LoadMessageBoxAndBorderGfx(); //gets red border if not & cuts off regardless    
@@ -384,19 +395,34 @@ bool32 Craft_ShowMainMenu(void){
 static void RefreshCraftTable(void){
     
     FillWindowPixelBuffer(WINDOW_CRAFT_TABLE, PIXEL_FILL(TEXT_COLOR_WHITE));
-
+    //FillWindowPixelRect(WINDOW_CRAFT_TABLE,PIXEL_FILL(TEXT_COLOR_WHITE), 9*8 + 8, 16 + 1, 8, 4);
 }
 
-static const u8 sWindowColors[3] = { TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY };
+static const u8 sWindowColors[3] = {TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY};
 
 static void UpdateCraftSlot(void){
     /*If item = ITEM_NONE then display craft instructions "A to Add Item, Start to Craft"
      *Go to Bag, choose item for gSpecialVar_0x8000-3, update with name (refresh)
      *If item = anything else, ask SWAP/BAG/READY/CANCEL*/
+        u32 i, j;
+
 
     RefreshCraftTable();
+    ChangeMenuGridCursorPosition(MENU_CURSOR_DELTA_NONE, MENU_CURSOR_DELTA_NONE);
     StringExpandPlaceholders(gStringVar4, sText_SlotTest);
-    AddTextPrinterParameterized3(WINDOW_CRAFT_TABLE, FONT_NARROW, 0, 1, sWindowColors, TEXT_SKIP_DRAW, gStringVar4);
+
+    //PrintMenuGridTable(WINDOW_CRAFT_TABLE, 9 * 8, 2, 2, sCountCraftItemConvert[0].list);    
+
+    for (i = 0; i < 2; i++)
+    {
+        for (j = 0; j < 2; j++)
+            AddTextPrinterParameterized(WINDOW_CRAFT_TABLE, 1, MultichoiceList_CraftEmpty[(i * 2) + j].text,
+                (9*8 * j) + 8, (i * 16) + 1, TEXT_SKIP_DRAW, NULL);
+            //AddTextPrinterParameterized(WINDOW_CRAFT_TABLE, 1, gText_SelectorArrow3,
+            //     (9*8 * j), (i * 16) + 1, TEXT_SKIP_DRAW, NULL);
+
+    }
+
 
     PutWindowTilemap(WINDOW_CRAFT_TABLE);
     CopyWindowToVram(WINDOW_CRAFT_TABLE, COPYWIN_GFX);
@@ -442,12 +468,24 @@ static s8 Craft_ProcessGridChange(void){
 
 static void Task_HandleCraftMenuInput(u8 taskId){
     s16 *data = gTasks[taskId].data;
-    //s8 cursorPos = Menu_GetCursorPos();
-    s8 selection = Menu_ProcessGridInput();
+    s8 selection;
+
+    selection = Menu_ProcessGridInput();
+
+
     //if they pressed anything at all ("newkeys = true" or something [something = if(JOY_NEW(DPAD_ANY))] ) refresh little info window
     if(JOY_NEW(DPAD_ANY)){
+        gSpecialVar_Result += 1;
+        if (gSpecialVar_Result > 4){
+            gSpecialVar_Result = 1;
+        }
+        ConvertIntToDecimalStringN(gStringVar1, gSpecialVar_Result,STR_CONV_MODE_LEFT_ALIGN,1);
+
+
         UpdateCraftSlot();
+        //ChangeMenuGridCursorPosition(MENU_CURSOR_DELTA_NONE, MENU_CURSOR_DELTA_NONE);
     }
+
 
     switch (selection){
     case MENU_NOTHING_CHOSEN:
@@ -483,6 +521,7 @@ static void Craft_DestroyMainMenu(u8 taskId)
     //ScriptUnfreezeObjectEvents();
     UnlockPlayerFieldControls();
     
+    //FreeAllWindowBuffers();    
     DestroyTask(taskId);
     ScriptContext_Enable();
 

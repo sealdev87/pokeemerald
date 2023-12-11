@@ -537,3 +537,4 @@ gSpecials::
 	def_special TrySetBattleTowerLinkType
 	def_special CraftMenu_Init
 	def_special ShowStartMenu
+	def_special ShowCraftMenu

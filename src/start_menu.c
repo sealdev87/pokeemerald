@@ -292,6 +292,8 @@ static void BuildStartMenuActions(void)
 
 static void AddStartMenuAction(u8 action)
 {
+    //sNumStartMenuActions++ with each action added. sCurrentStartMenuActions[index] has printed items
+    //action is the index of sStartMenuItems which is used in printstartmenuactions
     AppendToList(sCurrentStartMenuActions, &sNumStartMenuActions, action);
 }
 
@@ -430,26 +432,28 @@ static void RemoveExtraStartMenuWindows(void)
 }
 
 static bool32 PrintStartMenuActions(s8 *pIndex, u32 count)
-{
+{   //prints 2 items per frame, saves location w/ index aka "sInitStartMenuData[1]"
     s8 index = *pIndex;
 
     do
     {
         if (sStartMenuItems[sCurrentStartMenuActions[index]].func.u8_void == StartMenuPlayerNameCallback)
         {
-            PrintPlayerNameOnWindow(GetStartMenuWindowId(), sStartMenuItems[sCurrentStartMenuActions[index]].text, 8, (index << 4) + 9);
+            PrintPlayerNameOnWindow(GetStartMenuWindowId(), sStartMenuItems[sCurrentStartMenuActions[index]].text,
+                8, (index << 4) + 9); //where  "a << b" is "a * 2^b"
         }
         else
         {
             StringExpandPlaceholders(gStringVar4, sStartMenuItems[sCurrentStartMenuActions[index]].text);
-            AddTextPrinterParameterized(GetStartMenuWindowId(), FONT_NORMAL, gStringVar4, 8, (index << 4) + 9, TEXT_SKIP_DRAW, NULL);
+            AddTextPrinterParameterized(GetStartMenuWindowId(), 
+                FONT_NORMAL, gStringVar4, 8, (index << 4) + 9, TEXT_SKIP_DRAW, NULL);
         }
 
         index++;
         if (index >= sNumStartMenuActions)
         {
             *pIndex = index;
-            return TRUE;
+            return TRUE; //done printing
         }
 
         count--;
@@ -964,7 +968,7 @@ static u8 SaveConfirmSaveCallback(void) //craft
 {
     ClearStdWindowAndFrame(GetStartMenuWindowId(), FALSE);
     RemoveStartMenuWindow();
-    ShowSaveInfoWindow();
+    ShowSaveInfoWindow(); //craft copywin_gfx
 
     if (InBattlePyramid())
     {

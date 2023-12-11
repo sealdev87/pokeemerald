@@ -339,7 +339,7 @@ static const u8 sContextMenuItems_QuizLady[] = {
     ACTION_CONFIRM_QUIZ_LADY, ACTION_CANCEL
 };
 
-static const TaskFunc sContextMenuFuncs[] = {
+static const TaskFunc sContextMenuFuncs[] = { //craft
     [ITEMMENULOCATION_FIELD] =                  Task_ItemContext_Normal,
     [ITEMMENULOCATION_BATTLE] =                 Task_ItemContext_Normal,
     [ITEMMENULOCATION_PARTY] =                  Task_ItemContext_GiveToParty,
@@ -744,7 +744,7 @@ static bool8 SetupBagMenu(void)
         gMain.state++;
         break;
     case 14:
-        taskId = CreateBagInputHandlerTask(gBagPosition.location);
+        taskId = CreateBagInputHandlerTask(gBagPosition.location); //craft
         gTasks[taskId].tListTaskId = ListMenuInit(&gMultiuseListMenuTemplate, gBagPosition.scrollPosition[gBagPosition.pocket], gBagPosition.cursorPosition[gBagPosition.pocket]);
         gTasks[taskId].tNeverRead = 0;
         gTasks[taskId].tItemCount = 0;
@@ -848,7 +848,7 @@ static u8 CreateBagInputHandlerTask(u8 location)
     if (location == ITEMMENULOCATION_WALLY)
         taskId = CreateTask(Task_WallyTutorialBagMenu, 0);
     else
-        taskId = CreateTask(Task_BagMenu_HandleInput, 0);
+        taskId = CreateTask(Task_BagMenu_HandleInput, 0); //craft... this is returned to item startup task
     return taskId;
 }
 
@@ -1265,7 +1265,7 @@ static void Task_BagMenu_HandleInput(u8 taskId)
             tListPosition = listPosition;
             tQuantity = BagGetQuantityByPocketPosition(gBagPosition.pocket + 1, listPosition);
             gSpecialVar_ItemId = BagGetItemIdByPocketPosition(gBagPosition.pocket + 1, listPosition);
-            sContextMenuFuncs[gBagPosition.location](taskId);
+            sContextMenuFuncs[gBagPosition.location](taskId); //craft
             break;
         }
     }
@@ -1527,7 +1527,7 @@ static void CancelItemSwap(u8 taskId)
     gTasks[taskId].func = Task_BagMenu_HandleInput;
 }
 
-static void OpenContextMenu(u8 taskId)
+static void OpenContextMenu(u8 taskId) //craft - use for after clicking on item
 {
     switch (gBagPosition.location)
     {
@@ -1648,11 +1648,11 @@ static void OpenContextMenu(u8 taskId)
         PutWindowTilemap(WIN_TMHM_INFO);
         ScheduleBgCopyTilemapToVram(0);
     }
-    else
+    else //craft - win_description is the little side window under backpack graphic
     {
-        CopyItemName(gSpecialVar_ItemId, gStringVar1);
+        CopyItemName(gSpecialVar_ItemId, gStringVar1); //itemId -> str var 1 -> gText -> str var 4 - > print
         StringExpandPlaceholders(gStringVar4, gText_Var1IsSelected);
-        FillWindowPixelBuffer(WIN_DESCRIPTION, PIXEL_FILL(0));
+        FillWindowPixelBuffer(WIN_DESCRIPTION, PIXEL_FILL(0)); 
         BagMenu_Print(WIN_DESCRIPTION, FONT_NORMAL, gStringVar4, 3, 1, 0, 0, 0, COLORID_NORMAL);
     }
     if (gBagMenu->contextMenuNumItems == 1)
@@ -1677,7 +1677,7 @@ static void PrintContextMenuItemGrid(u8 windowId, u8 columns, u8 rows)
     InitMenuActionGrid(windowId, 56, columns, rows, 0);
 }
 
-static void Task_ItemContext_Normal(u8 taskId)
+static void Task_ItemContext_Normal(u8 taskId) //craft - after clicking A, decides context and goes here usually
 {
     OpenContextMenu(taskId);
 
@@ -1710,7 +1710,7 @@ static void Task_ItemContext_SingleRow(u8 taskId)
     }
 }
 
-static void Task_ItemContext_MultipleRows(u8 taskId)
+static void Task_ItemContext_MultipleRows(u8 taskId) //craft - copy this biz
 {
     if (MenuHelpers_ShouldWaitForLinkRecv() != TRUE)
     {
