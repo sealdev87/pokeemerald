@@ -304,7 +304,7 @@ void CraftMenu_Init(void){
     //PlayerFreeze();
     //StopPlayerAvatar();
     
-    //NOTE: freeze if used by Mess Kit item in the overworld, otherwise all cratt situations are controlled and
+    //NOTE: freeze if used by Mess Kit item in the overworld, otherwise keep all craft situations are controlled and
     //       miss accidental event interaction
 
 

@@ -1016,7 +1016,7 @@ static void BagMenu_PrintCursor(u8 listTaskId, u8 colorIndex)
     BagMenu_PrintCursorAtPos(ListMenuGetYCoordForPrintingArrowCursor(listTaskId), colorIndex);
 }
 
-static void BagMenu_PrintCursorAtPos(u8 y, u8 colorIndex)
+static void BagMenu_PrintCursorAtPos(u8 y, u8 colorIndex) //craft
 {
     if (colorIndex == COLORID_NONE)
         FillWindowPixelRect(WIN_ITEM_LIST, PIXEL_FILL(0), 0, y, GetMenuCursorDimensionByFont(FONT_NORMAL, 0), GetMenuCursorDimensionByFont(FONT_NORMAL, 1));
@@ -1671,7 +1671,7 @@ static void PrintContextMenuItems(u8 windowId)
     InitMenuInUpperLeftCornerNormal(windowId, gBagMenu->contextMenuNumItems, 0);
 }
 
-static void PrintContextMenuItemGrid(u8 windowId, u8 columns, u8 rows)
+static void PrintContextMenuItemGrid(u8 windowId, u8 columns, u8 rows) //craft
 {
     PrintMenuActionGrid(windowId, FONT_NARROW, 8, 1, 56, columns, rows, sItemMenuActions, gBagMenu->contextMenuItemsPtr);
     InitMenuActionGrid(windowId, 56, columns, rows, 0);

@@ -795,7 +795,7 @@ static bool8 StartMenuBattlePyramidBagCallback(void)
     return FALSE;
 }
 
-static bool8 SaveStartCallback(void)
+static bool8 SaveStartCallback(void) //craft
 {
     InitSave();
     gMenuCallback = SaveCallback;
@@ -964,7 +964,7 @@ static bool8 SaveErrorTimer(void)
     return FALSE;
 }
 
-static u8 SaveConfirmSaveCallback(void) //craft
+static u8 SaveConfirmSaveCallback(void)
 {
     ClearStdWindowAndFrame(GetStartMenuWindowId(), FALSE);
     RemoveStartMenuWindow();

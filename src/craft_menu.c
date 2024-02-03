@@ -66,11 +66,13 @@ enum CraftState {
 bool8 (*gMenuCallback)(void);
 
 // EWRAM
-EWRAM_DATA static u8 sCraftMenuCursorPos = 0;
 EWRAM_DATA static u8 sCraftTableWindowId = 0;
 EWRAM_DATA static u8 sCraftInfoWindowId = 0;
+EWRAM_DATA static u8 sCraftReadyUpWindowId = 0;
+EWRAM_DATA static u8 sCraftSousChefsWindowId = 0;
+
+EWRAM_DATA static u8 sCraftMenuCursorPos = 0;
 EWRAM_DATA static u8 sInitCraftMenuData[1] = {0};
-EWRAM_DATA static u8 sCurrentCraftMenuActions[4] = {0}; //actions based on craft table contents (obsolete?)
 EWRAM_DATA static u16 sCurrentCraftTableItems[4][2] = {0}; //craft table items, actions
 EWRAM_DATA static u8 sCraftState = 0;
 
@@ -81,6 +83,7 @@ static bool8 CraftMenuAddSwapCallback(void);
 static bool8 CraftMenuRemoveBagCallback(void);
 static bool8 CraftMenuReadyCallback(void);
 static bool8 CraftMenuCancelCallback(void);
+static void HideOptionsMenu(void);
 
 // Menu callbacks
 static bool8 HandleCraftMenuInput(void);
@@ -113,43 +116,6 @@ enum CraftWindows {
 };
 
 static const struct WindowTemplate sCraftWindowTemplates[] = {
-/*    [C_WIN_ITEM_NAME_1] = {
-        .bg = 0,
-        .tilemapLeft = 2,
-        .tilemapTop = 55,
-        .width = 8,
-        .height = 2,
-        .paletteNum = 5,
-        .baseBlock = 0x0300,
-    },
-    [C_WIN_ITEM_NAME_2] = {
-        .bg = 0,
-        .tilemapLeft = 11,
-        .tilemapTop = 55,
-        .width = 8,
-        .height = 2,
-        .paletteNum = 5,
-        .baseBlock = 0x0310,
-    },
-    [C_WIN_ITEM_NAME_3] = {
-        .bg = 0,
-        .tilemapLeft = 2,
-        .tilemapTop = 57,
-        .width = 8,
-        .height = 2,
-        .paletteNum = 5,
-        .baseBlock = 0x0320,
-    },
-    [C_WIN_ITEM_NAME_4] = {
-        .bg = 0,
-        .tilemapLeft = 11,
-        .tilemapTop = 57,
-        .width = 8,
-        .height = 2,
-        .paletteNum = 5,
-        .baseBlock = 0x0330,
-    },
-*/
     [WINDOW_CRAFT_MSG] = {
         .bg = 0,
         .tilemapLeft = 2,
@@ -174,8 +140,8 @@ static const struct WindowTemplate sCraftWindowTemplates[] = {
         .tilemapTop = 15,
         .width = 8,
         .height = 4,
-        .paletteNum = 5,
-        .baseBlock = 1 + 18*4 + 27*4,
+        .paletteNum = 15,
+        .baseBlock = 1 + 27*4 + 18*4,
     },
     [WINDOW_CRAFT_YESNO] = {
         .bg = 0,
@@ -183,8 +149,17 @@ static const struct WindowTemplate sCraftWindowTemplates[] = {
         .tilemapTop = 9,
         .width = 3,
         .height = 4,
-        .paletteNum = 5,
-        .baseBlock = 1 + 18*4 + 8*4 + 27*4,
+        .paletteNum = 15,
+        .baseBlock = 1 + 27*4 + 18*4 + 8*4,
+    },
+    [WINDOW_CRAFT_READYUP] = {
+        .bg = 0,
+        .tilemapLeft = 15,
+        .tilemapTop = 9,
+        .width = 14,
+        .height = 4,
+        .paletteNum = 15,
+        .baseBlock = 1 + 27*4 + 18*4 + 8*4 + 3*4,
     },
     DUMMY_WIN_TEMPLATE
 };
@@ -193,14 +168,17 @@ static const struct WindowTemplate sCraftWindowTemplates[] = {
 static void BuildCraftTableActions(void);
 static void ShowCraftTableWindow(void);
 static void ShowCraftInfoWindow(void);
+static void ShowCraftReadyUpWindow(void);
 static void ShowCraftTableAndInfoWindows(void);
+static void LoadCraftWindows(void);
+
 static const u8 *GetCraftTableItemName(u16 itemId);
 static void RemoveExtraCraftMenuWindows(void);
 static void PrintCraftTableItems(void);
 static bool32 InitCraftMenuStep(void);
 static void CraftMenuTask(u8 taskId);
 static void ClearCraftTable(void);
-static void CreateCraftMenuTask(TaskFunc followupFunc);
+static void Task_CreateCraftMenu(TaskFunc followupFunc);
 
 
 static void BuildCraftTableActions(void){
@@ -226,20 +204,15 @@ void ShowReturnToFieldCraftMenu(void){
 
 static void ShowCraftTableWindow(void)
 {
-    //if (sCraftTableWindowId == WINDOW_NONE)
-        sCraftTableWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_TABLE]);
+    //sCraftTableWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_TABLE]);
     PutWindowTilemap(sCraftTableWindowId);
     DrawStdWindowFrame(sCraftTableWindowId, FALSE);
-    //ConvertIntToDecimalStringN(gStringVar1, gNumSafariBalls, STR_CONV_MODE_RIGHT_ALIGN, 2);
-    //StringExpandPlaceholders(gStringVar4, gText_SafariBallStock);
-    //AddTextPrinterParameterized(sCraftTableWindowId, FONT_NORMAL, gStringVar4, 0, 1, TEXT_SKIP_DRAW, NULL);
     CopyWindowToVram(sCraftTableWindowId, COPYWIN_GFX);
 }
 
 static void ShowCraftInfoWindow(void)
 {
-    //if (sCraftInfoWindowId == WINDOW_NONE)
-        sCraftInfoWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_INFO]);
+    //sCraftInfoWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_INFO]);
     PutWindowTilemap(sCraftInfoWindowId);
     DrawStdWindowFrame(sCraftInfoWindowId, FALSE);
     //ConvertIntToDecimalStringN(gStringVar1, gNumSafariBalls, STR_CONV_MODE_RIGHT_ALIGN, 2);
@@ -248,9 +221,36 @@ static void ShowCraftInfoWindow(void)
     CopyWindowToVram(sCraftInfoWindowId, COPYWIN_GFX);
 }
 
+static void ShowCraftReadyUpWindow(void)
+{
+    //sCraftReadyUpWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_READYUP]);
+    PutWindowTilemap(sCraftReadyUpWindowId);
+    DrawStdWindowFrame(sCraftReadyUpWindowId, FALSE);
+    //CopyWindowToVram(sCraftReadyUpWindowId, COPYWIN_GFX);
+    ScheduleBgCopyTilemapToVram(0);
+}
+
 static void ShowCraftTableAndInfoWindows(void){
     ShowCraftTableWindow();
     ShowCraftInfoWindow();
+}
+
+static void LoadCraftWindows(void){
+    //Craft Table
+    sCraftTableWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_TABLE]);
+    //PutWindowTilemap(sCraftTableWindowId);
+    //DrawStdWindowFrame(sCraftTableWindowId, FALSE);
+
+    //Info
+    sCraftInfoWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_INFO]);
+    //PutWindowTilemap(sCraftInfoWindowId);
+    //DrawStdWindowFrame(sCraftInfoWindowId, FALSE);
+
+    //Ready/Options
+    sCraftReadyUpWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_READYUP]);
+    //PutWindowTilemap(sCraftReadyUpWindowId);
+    //DrawStdWindowFrame(sCraftReadyUpWindowId, FALSE);
+
 }
 
 static const u8 *GetCraftTableItemName(u16 itemId){
@@ -303,8 +303,7 @@ static bool32 InitCraftMenuStep(void)
         break;
     case 2:
         LoadMessageBoxAndBorderGfx();
-        ShowCraftTableAndInfoWindows();
-        //DrawStdWindowFrame(AddStartMenuWindow(sNumStartMenuActions), FALSE); //update to display craft table & info
+        LoadCraftWindows();
         sInitCraftMenuData[0]++;
         break;
     case 3:
@@ -312,6 +311,7 @@ static bool32 InitCraftMenuStep(void)
         //     ShowSafariBallsWindow();
         // if (InBattlePyramid())
         //     ShowPyramidFloorWindow();
+        ShowCraftTableAndInfoWindows();
         sInitCraftMenuData[0]++;
         break;
     case 4:
@@ -348,7 +348,7 @@ static void ClearCraftTable(void){
     }
 }
 
-static void CreateCraftMenuTask(TaskFunc followupFunc){
+static void Task_CreateCraftMenu(TaskFunc followupFunc){ //change to Task_CreateCraftMenu
     
     u8 taskId;
 
@@ -363,7 +363,7 @@ static void CreateCraftMenuTask(TaskFunc followupFunc){
 
 void Task_ShowCraftMenu(u8 taskId){
               
-                //pointer for global task location, acts as state for switch
+                //pointer for global task location, acts as state for create switch
     struct Task *task = &gTasks[taskId];
 
     switch(task->data[0])
@@ -383,12 +383,22 @@ void ShowCraftMenu(void){
     PlayerFreeze();
     StopPlayerAvatar();
 
-    CreateCraftMenuTask(Task_ShowCraftMenu);
+    Task_CreateCraftMenu(Task_ShowCraftMenu);
     LockPlayerFieldControls();
 }
 
 static bool8 HandleCraftMenuInput(void)
 {
+    //update info window with every cursor move (item: xQty in Bag & str to craft, blank: A to add item & "items ? str to craft : B to leave")
+    //if clicking on something, either add or show options
+    //options = SWAP/READY/BAG/CANCEL
+    //swap - get different item, ready - check craft recipe, bag - remove item, cancel - close options (update info window!)
+    //ready: Want to craft this item? YES/NO
+    //Crafting... mixing... combining... item obtained!
+    //packup: Pack up items? YES/NO
+    //Item4 -> blank, item3 -> blank, item2 -> blank, item1 -> blank, exit
+    //Select for secret recipe book? Or add to options once flagged
+    //soux chefs: charmander, squirtle, bulbasaur, aron, snorunt (heat, water, spices, salt/tools, ice)
 
     switch(sCraftState)
     {
@@ -423,9 +433,14 @@ static bool8 HandleCraftMenuInput(void)
             gMenuCallback = sCraftTableActions[
                 sCurrentCraftTableItems[sCraftMenuCursorPos][CRAFT_TABLE_ACTION]].func.u8_void;
 
-            if (gMenuCallback == CraftMenuAddSwapCallback)
+            if (gMenuCallback == CraftMenuAddSwapCallback){ //if it's blank
+                //FadeScreen(FADE_TO_BLACK, 0);
+            }
+            else //if it's an item
             {
-            //FadeScreen(FADE_TO_BLACK, 0);
+                //turn arrow gray
+                ShowCraftReadyUpWindow();
+                sCraftState = STATE_OPTIONS_INPUT;
             }
 
             return FALSE;
@@ -434,21 +449,53 @@ static bool8 HandleCraftMenuInput(void)
         if (JOY_NEW(START_BUTTON))
         {
             PlaySE(SE_SELECT);
-            gMenuCallback = CraftMenuReadyCallback; //set up yes/no window?
+            gMenuCallback = CraftMenuReadyCallback; //set up yes/no window
         }
 
         //select button, instant addswap item (or recipe book??)
+        if (JOY_NEW(SELECT_BUTTON))
+        {
+            PlaySE(SE_SELECT);
+            ShowCraftReadyUpWindow();
+            sCraftState = STATE_OPTIONS_INPUT;
+        }
 
         if (JOY_NEW(B_BUTTON)) //If !IsCraftTableEmpty then gmenucallback = CraftMenuPackUpCallback, otherwise just quit
         {
             //RemoveExtraCraftMenuWindows(); //if safarizone/battlepyramid flags, remove those windows. In this case,
-                                           //it'd be sous chefs 
+                                             //it'd be sous chefs 
             HideCraftMenu();
             return TRUE;
         }
 
         return FALSE;
 
+    case STATE_OPTIONS_INPUT:
+        /*How the ITEM MENU works:
+          gray cursor in item list
+          gspecialvar_itemId
+          open context menu
+                ask what you wanna do with var_itemid
+                print options grid
+          taskid = which grid format handling?
+          ACTION_CANCEL
+                remove window
+                reprint desc
+                black cursor
+                return to item list handling
+                        refresh graphics
+                        taskid = bag handling
+        */
+    
+       if (JOY_NEW(B_BUTTON)){
+            PlaySE(SE_SELECT);
+            HideOptionsMenu();
+            sCraftState = STATE_TABLE_INPUT;
+       }
+
+
+
+        return FALSE;
     }
 }
 
@@ -488,11 +535,17 @@ static bool8 CraftMenuCancelCallback(void){
     return TRUE;
 }
 
+static void HideOptionsMenu(void){
 
+    ClearStdWindowAndFrame(sCraftReadyUpWindowId, TRUE);
+
+    if (sCraftReadyUpWindowId != WINDOW_NONE){
+        RemoveWindow(sCraftReadyUpWindowId);
+        sCraftReadyUpWindowId = WINDOW_NONE;
+    }
+}
 
 void HideCraftMenu(void){
-
-    PlaySE(SE_SELECT);
 
     ClearStdWindowAndFrame(sCraftTableWindowId, TRUE);
     if (sCraftTableWindowId != WINDOW_NONE){
