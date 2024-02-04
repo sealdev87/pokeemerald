@@ -83,7 +83,7 @@ static bool8 CraftMenuAddSwapCallback(void);
 static bool8 CraftMenuRemoveBagCallback(void);
 static bool8 CraftMenuReadyCallback(void);
 static bool8 CraftMenuCancelCallback(void);
-static void HideOptionsMenu(void);
+static void HideReadyUpWindow(void);
 
 // Menu callbacks
 static bool8 HandleCraftMenuInput(void);
@@ -223,10 +223,10 @@ static void ShowCraftInfoWindow(void)
 
 static void ShowCraftReadyUpWindow(void)
 {
-    //sCraftReadyUpWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_READYUP]);
+    //FillWindowPixelBuffer(sCraftReadyUpWindowId, PIXEL_FILL(0));
+    HideReadyUpWindow(); //need to clear it first, otherwise only partially fills
     PutWindowTilemap(sCraftReadyUpWindowId);
     DrawStdWindowFrame(sCraftReadyUpWindowId, FALSE);
-    //CopyWindowToVram(sCraftReadyUpWindowId, COPYWIN_GFX);
     ScheduleBgCopyTilemapToVram(0);
 }
 
@@ -389,16 +389,17 @@ void ShowCraftMenu(void){
 
 static bool8 HandleCraftMenuInput(void)
 {
-    //update info window with every cursor move (item: xQty in Bag & str to craft, blank: A to add item & "items ? str to craft : B to leave")
-    //if clicking on something, either add or show options
-    //options = SWAP/READY/BAG/CANCEL
-    //swap - get different item, ready - check craft recipe, bag - remove item, cancel - close options (update info window!)
-    //ready: Want to craft this item? YES/NO
-    //Crafting... mixing... combining... item obtained!
-    //packup: Pack up items? YES/NO
-    //Item4 -> blank, item3 -> blank, item2 -> blank, item1 -> blank, exit
-    //Select for secret recipe book? Or add to options once flagged
-    //soux chefs: charmander, squirtle, bulbasaur, aron, snorunt (heat, water, spices, salt/tools, ice)
+    /*update info window with every cursor move (item: xQty in Bag & str to craft, blank: A to add item & "items ? str to craft : B to leave")
+      if clicking on something, either add or show options
+      options = SWAP/READY/BAG/CANCEL
+      swap - get different item, ready - check craft recipe, bag - remove item, cancel - close options (update info window!)
+      ready: Want to craft this item? YES/NO
+      Crafting... mixing... combining... item obtained!
+      packup: Pack up items? YES/NO
+      Item4 -> blank, item3 -> blank, item2 -> blank, item1 -> blank, exit
+      Select for secret recipe book? Or add to options once flagged
+      soux chefs: charmander, squirtle, bulbasaur, aron, snorunt (heat, water, spices, salt/tools, ice)
+    */
 
     switch(sCraftState)
     {
@@ -489,7 +490,7 @@ static bool8 HandleCraftMenuInput(void)
     
        if (JOY_NEW(B_BUTTON)){
             PlaySE(SE_SELECT);
-            HideOptionsMenu();
+            HideReadyUpWindow();
             sCraftState = STATE_TABLE_INPUT;
        }
 
@@ -535,14 +536,18 @@ static bool8 CraftMenuCancelCallback(void){
     return TRUE;
 }
 
-static void HideOptionsMenu(void){
+static void HideReadyUpWindow(void){
 
     ClearStdWindowAndFrame(sCraftReadyUpWindowId, TRUE);
+    //ClearWindowTilemap(sCraftReadyUpWindowId);
+    //ClearStdWindowAndFrameToTransparent(sCraftReadyUpWindowId, FALSE);
+    //ScheduleBgCopyTilemapToVram(0);
 
+/*
     if (sCraftReadyUpWindowId != WINDOW_NONE){
         RemoveWindow(sCraftReadyUpWindowId);
         sCraftReadyUpWindowId = WINDOW_NONE;
-    }
+    }*/
 }
 
 void HideCraftMenu(void){
