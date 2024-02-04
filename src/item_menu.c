@@ -1980,7 +1980,7 @@ static void ItemMenu_Cancel(u8 taskId)
     ScheduleBgCopyTilemapToVram(0);
     ScheduleBgCopyTilemapToVram(1);
     BagMenu_PrintCursor(tListTaskId, COLORID_NORMAL);
-    ReturnToItemList(taskId);
+    ReturnToItemList(taskId); //craft
 }
 
 static void ItemMenu_UseInBattle(u8 taskId)

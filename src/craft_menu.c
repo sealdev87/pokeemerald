@@ -68,7 +68,7 @@ bool8 (*gMenuCallback)(void);
 // EWRAM
 EWRAM_DATA static u8 sCraftTableWindowId = 0;
 EWRAM_DATA static u8 sCraftInfoWindowId = 0;
-EWRAM_DATA static u8 sCraftReadyUpWindowId = 0;
+EWRAM_DATA static u8 sCraftOptionsWindowId = 0;
 EWRAM_DATA static u8 sCraftSousChefsWindowId = 0;
 
 EWRAM_DATA static u8 sCraftMenuCursorPos = 0;
@@ -83,7 +83,7 @@ static bool8 CraftMenuAddSwapCallback(void);
 static bool8 CraftMenuRemoveBagCallback(void);
 static bool8 CraftMenuReadyCallback(void);
 static bool8 CraftMenuCancelCallback(void);
-static void HideReadyUpWindow(void);
+static void HideOptionsWindow(void);
 
 // Menu callbacks
 static bool8 HandleCraftMenuInput(void);
@@ -99,11 +99,16 @@ static const struct MenuAction sCraftTableActions[] = {
     [TABLE_ACTION_ITEM]             = {gText_Dash,        {.u8_void = CraftMenuItemOptionsCallback}} //check out startmenusavecallback
 };
 
-static const struct MenuAction sCraftMenuItems[] = { //craft actions, SWAP/READY/BAG/CANCEL
+static const struct MenuAction sCraftOptionsActions[] = { //craft actions, SWAP/READY/BAG/CANCEL
     [MENU_ACTION_SWAP]            = {gText_Swap,        {.u8_void = CraftMenuAddSwapCallback}},
     [MENU_ACTION_BAG]             = {gText_MenuBag,     {.u8_void = CraftMenuRemoveBagCallback}},
     [MENU_ACTION_READY]           = {sText_Ready,       {.u8_void = CraftMenuReadyCallback}},
     [MENU_ACTION_CANCEL]          = {gText_Cancel,      {.u8_void = CraftMenuCancelCallback}}
+};
+
+static const u8 sCraftOptionsActions_List[] = {
+    MENU_ACTION_SWAP,       MENU_ACTION_BAG,
+    MENU_ACTION_READY,        MENU_ACTION_CANCEL
 };
 
 enum CraftWindows {
@@ -111,7 +116,7 @@ enum CraftWindows {
     WINDOW_CRAFT_TABLE,
     WINDOW_CRAFT_INFO,
     WINDOW_CRAFT_YESNO,
-    WINDOW_CRAFT_READYUP,
+    WINDOW_CRAFT_OPTIONS,
     WINDOW_CRAFT_SOUSCHEFS,
 };
 
@@ -152,7 +157,7 @@ static const struct WindowTemplate sCraftWindowTemplates[] = {
         .paletteNum = 15,
         .baseBlock = 1 + 27*4 + 18*4 + 8*4,
     },
-    [WINDOW_CRAFT_READYUP] = {
+    [WINDOW_CRAFT_OPTIONS] = {
         .bg = 0,
         .tilemapLeft = 15,
         .tilemapTop = 9,
@@ -168,13 +173,14 @@ static const struct WindowTemplate sCraftWindowTemplates[] = {
 static void BuildCraftTableActions(void);
 static void ShowCraftTableWindow(void);
 static void ShowCraftInfoWindow(void);
-static void ShowCraftReadyUpWindow(void);
+static void ShowCraftOptionsWindow(void);
 static void ShowCraftTableAndInfoWindows(void);
 static void LoadCraftWindows(void);
 
 static const u8 *GetCraftTableItemName(u16 itemId);
 static void RemoveExtraCraftMenuWindows(void);
 static void PrintCraftTableItems(void);
+static void PrintOptionsMenuGrid(u8, u8, u8);
 static bool32 InitCraftMenuStep(void);
 static void CraftMenuTask(u8 taskId);
 static void ClearCraftTable(void);
@@ -221,12 +227,21 @@ static void ShowCraftInfoWindow(void)
     CopyWindowToVram(sCraftInfoWindowId, COPYWIN_GFX);
 }
 
-static void ShowCraftReadyUpWindow(void)
+static void PrintOptionsMenuGrid(u8 windowId, u8 columns, u8 rows)
 {
-    //FillWindowPixelBuffer(sCraftReadyUpWindowId, PIXEL_FILL(0));
-    HideReadyUpWindow(); //need to clear it first, otherwise only partially fills
-    PutWindowTilemap(sCraftReadyUpWindowId);
-    DrawStdWindowFrame(sCraftReadyUpWindowId, FALSE);
+    PrintMenuActionGrid(windowId, FONT_NORMAL, 8, 1, 56, columns, rows, sCraftOptionsActions, sCraftOptionsActions_List);
+    InitMenuActionGrid(windowId, 56, columns, rows, 0);
+}
+
+static void ShowCraftOptionsWindow(void)
+{
+    ClearStdWindowAndFrame(sCraftOptionsWindowId, TRUE); //need to clear it first, otherwise only partially fills
+    
+    FillWindowPixelBuffer(sCraftOptionsWindowId, PIXEL_FILL(0));
+    DrawStdWindowFrame(sCraftOptionsWindowId, FALSE);
+    PrintOptionsMenuGrid(sCraftOptionsWindowId, 2, 2);
+    
+    //PutWindowTilemap(sCraftOptionsWindowId);
     ScheduleBgCopyTilemapToVram(0);
 }
 
@@ -247,7 +262,7 @@ static void LoadCraftWindows(void){
     //DrawStdWindowFrame(sCraftInfoWindowId, FALSE);
 
     //Ready/Options
-    sCraftReadyUpWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_READYUP]);
+    sCraftOptionsWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_OPTIONS]);
     //PutWindowTilemap(sCraftReadyUpWindowId);
     //DrawStdWindowFrame(sCraftReadyUpWindowId, FALSE);
 
@@ -440,7 +455,7 @@ static bool8 HandleCraftMenuInput(void)
             else //if it's an item
             {
                 //turn arrow gray
-                ShowCraftReadyUpWindow();
+                ShowCraftOptionsWindow();
                 sCraftState = STATE_OPTIONS_INPUT;
             }
 
@@ -457,7 +472,7 @@ static bool8 HandleCraftMenuInput(void)
         if (JOY_NEW(SELECT_BUTTON))
         {
             PlaySE(SE_SELECT);
-            ShowCraftReadyUpWindow();
+            ShowCraftOptionsWindow();
             sCraftState = STATE_OPTIONS_INPUT;
         }
 
@@ -490,7 +505,8 @@ static bool8 HandleCraftMenuInput(void)
     
        if (JOY_NEW(B_BUTTON)){
             PlaySE(SE_SELECT);
-            HideReadyUpWindow();
+            HideOptionsWindow();
+            //reload craft table?
             sCraftState = STATE_TABLE_INPUT;
        }
 
@@ -536,18 +552,15 @@ static bool8 CraftMenuCancelCallback(void){
     return TRUE;
 }
 
-static void HideReadyUpWindow(void){
+static void HideOptionsWindow(void){
 
-    ClearStdWindowAndFrame(sCraftReadyUpWindowId, TRUE);
+    ClearStdWindowAndFrame(sCraftOptionsWindowId, TRUE);
+    sCraftMenuCursorPos = InitMenuGrid(sCraftTableWindowId, FONT_NARROW, 0, 1, 9 * 8, 15, 2, //9*8 from ScriptMenu_MultichoiceGrid, 15 from FONT_NARROW
+                                        2, 4, sCraftMenuCursorPos);
     //ClearWindowTilemap(sCraftReadyUpWindowId);
     //ClearStdWindowAndFrameToTransparent(sCraftReadyUpWindowId, FALSE);
     //ScheduleBgCopyTilemapToVram(0);
 
-/*
-    if (sCraftReadyUpWindowId != WINDOW_NONE){
-        RemoveWindow(sCraftReadyUpWindowId);
-        sCraftReadyUpWindowId = WINDOW_NONE;
-    }*/
 }
 
 void HideCraftMenu(void){
