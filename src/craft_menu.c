@@ -99,16 +99,16 @@ static const struct MenuAction sCraftTableActions[] = {
     [TABLE_ACTION_ITEM]             = {gText_Dash,        {.u8_void = CraftMenuItemOptionsCallback}} //check out startmenusavecallback
 };
 
-static const struct MenuAction sCraftOptionsActions[] = { //craft actions, SWAP/READY/BAG/CANCEL
+static const struct MenuAction sCraftOptionsActions[] = { //craft actions, SWAP/READY/PUT AWAY/CANCEL
     [MENU_ACTION_SWAP]            = {gText_Swap,        {.u8_void = CraftMenuAddSwapCallback}},
-    [MENU_ACTION_BAG]             = {gText_MenuBag,     {.u8_void = CraftMenuRemoveBagCallback}},
+    [MENU_ACTION_BAG]             = {gText_PutAway,     {.u8_void = CraftMenuRemoveBagCallback}},
     [MENU_ACTION_READY]           = {sText_Ready,       {.u8_void = CraftMenuReadyCallback}},
     [MENU_ACTION_CANCEL]          = {gText_Cancel,      {.u8_void = CraftMenuCancelCallback}}
 };
 
 static const u8 sCraftOptionsActions_List[] = {
-    MENU_ACTION_SWAP,       MENU_ACTION_BAG,
-    MENU_ACTION_READY,        MENU_ACTION_CANCEL
+    MENU_ACTION_SWAP,       MENU_ACTION_READY,
+    MENU_ACTION_BAG,        MENU_ACTION_CANCEL
 };
 
 enum CraftWindows {
@@ -418,7 +418,9 @@ static bool8 HandleCraftMenuInput(void)
 
     switch(sCraftState)
     {
-    
+
+    s32 OptionsCursorPos;
+
     case STATE_TABLE_INPUT:
 
         if (JOY_NEW(DPAD_UP))
@@ -451,6 +453,7 @@ static bool8 HandleCraftMenuInput(void)
 
             if (gMenuCallback == CraftMenuAddSwapCallback){ //if it's blank
                 //FadeScreen(FADE_TO_BLACK, 0);
+                gMenuCallback = CraftMenuPackUpCallback;
             }
             else //if it's an item
             {
@@ -464,8 +467,8 @@ static bool8 HandleCraftMenuInput(void)
 
         if (JOY_NEW(START_BUTTON))
         {
-            PlaySE(SE_SELECT);
-            gMenuCallback = CraftMenuReadyCallback; //set up yes/no window
+            //PlaySE(SE_SELECT);
+            //gMenuCallback = CraftMenuReadyCallback; //set up yes/no window
         }
 
         //select button, instant addswap item (or recipe book??)
@@ -502,51 +505,66 @@ static bool8 HandleCraftMenuInput(void)
                         refresh graphics
                         taskid = bag handling
         */
-    
-       if (JOY_NEW(B_BUTTON)){
+
+        OptionsCursorPos = Menu_GetCursorPos();
+
+        if (JOY_NEW(DPAD_UP))
+        {
+            if (OptionsCursorPos > 1)
+            {
+                PlaySE(SE_SELECT);
+                ChangeMenuGridCursorPosition(MENU_CURSOR_DELTA_NONE, MENU_CURSOR_DELTA_UP);
+            }
+        }
+        else if (JOY_NEW(DPAD_DOWN))
+        {
+            if (OptionsCursorPos < 2)
+            {
+                PlaySE(SE_SELECT);
+                ChangeMenuGridCursorPosition(MENU_CURSOR_DELTA_NONE, MENU_CURSOR_DELTA_DOWN);
+            }
+        }
+        else if (JOY_NEW(DPAD_LEFT))
+        {
+            if (OptionsCursorPos + 1 == 2 || OptionsCursorPos + 1 == 4)
+            {
+                PlaySE(SE_SELECT);
+                ChangeMenuGridCursorPosition(MENU_CURSOR_DELTA_LEFT, MENU_CURSOR_DELTA_NONE);
+            }
+        }
+        else if (JOY_NEW(DPAD_RIGHT))
+        {
+            if (OptionsCursorPos + 1 == 1 || OptionsCursorPos + 1 == 3)
+            {
+                PlaySE(SE_SELECT);
+                ChangeMenuGridCursorPosition(MENU_CURSOR_DELTA_RIGHT, MENU_CURSOR_DELTA_NONE);
+            }
+        }
+        else if (JOY_NEW(A_BUTTON))
+        {
+            PlaySE(SE_SELECT);
+            sCraftOptionsActions[sCraftOptionsActions_List[OptionsCursorPos]].func.void_u8;
+
+            //remove once function added to callbacks
+            return FALSE;
+        }
+        else if (JOY_NEW(B_BUTTON)){
             PlaySE(SE_SELECT);
             HideOptionsWindow();
-            //reload craft table?
             sCraftState = STATE_TABLE_INPUT;
        }
-
-
 
         return FALSE;
     }
 }
 
 static bool8 CraftMenuItemOptionsCallback(void){
-    HideCraftMenu();
-
-    return TRUE;
+    
+    ShowCraftOptionsWindow();
+    sCraftState = STATE_OPTIONS_INPUT;
 }
 
 static bool8 CraftMenuPackUpCallback(void){
-    HideCraftMenu();
-
-    return TRUE;
-}
-
-static bool8 CraftMenuAddSwapCallback(void){
-    HideCraftMenu();
-
-    return TRUE;
-}
-
-static bool8 CraftMenuRemoveBagCallback(void){
-    HideCraftMenu();
-
-    return TRUE;    
-}
-
-static bool8 CraftMenuReadyCallback(void){
-    HideCraftMenu();
-
-    return TRUE;    
-}
-
-static bool8 CraftMenuCancelCallback(void){
     HideCraftMenu();
 
     return TRUE;
@@ -562,6 +580,31 @@ static void HideOptionsWindow(void){
     //ScheduleBgCopyTilemapToVram(0);
 
 }
+
+static bool8 CraftMenuAddSwapCallback(void){
+    HideOptionsWindow();
+    sCraftState = STATE_TABLE_INPUT;
+    return TRUE;
+}
+
+static bool8 CraftMenuRemoveBagCallback(void){
+    HideOptionsWindow();
+    sCraftState = STATE_TABLE_INPUT;
+    return TRUE;    
+}
+
+static bool8 CraftMenuReadyCallback(void){
+    HideOptionsWindow();
+    sCraftState = STATE_TABLE_INPUT;
+    return TRUE;    
+}
+
+static bool8 CraftMenuCancelCallback(void){
+    HideOptionsWindow();
+    sCraftState = STATE_TABLE_INPUT;
+    return TRUE;
+}
+
 
 void HideCraftMenu(void){
 

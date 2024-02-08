@@ -548,7 +548,7 @@ void ShowReturnToFieldStartMenu(void)
 
 void Task_ShowStartMenu(u8 taskId)
 {
-                //pointer for global task location, acts as state for switch
+                //pointer for global task location, data acts as state for switch
     struct Task *task = &gTasks[taskId];
 
     switch(task->data[0])
@@ -619,7 +619,7 @@ static bool8 HandleStartMenuInput(void)
     {
         RemoveExtraStartMenuWindows();
         HideStartMenu();
-        return TRUE;
+        return TRUE; //sets gmenucallback to true, destroys task (see Task_showstartmenu above)
     }
 
     return FALSE;
@@ -967,7 +967,7 @@ static bool8 SaveErrorTimer(void)
 static u8 SaveConfirmSaveCallback(void)
 {
     ClearStdWindowAndFrame(GetStartMenuWindowId(), FALSE);
-    RemoveStartMenuWindow();
+    RemoveStartMenuWindow(); //removes and sets to window_none
     ShowSaveInfoWindow(); //craft copywin_gfx
 
     if (InBattlePyramid())
