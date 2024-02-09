@@ -56,3 +56,26 @@ InsideOfTruck_Text_BoxPrintedWithMonLogo:
 	.string "It's a POKéMON brand moving and\n"
 	.string "delivery service.$"
 
+
+
+InsideOfTruck_OranBerry::
+	finditem ITEM_ORAN_BERRY
+	end
+
+InsideOfTruck_EventScript_MovingBox2::
+	msgbox InsideOfTruck_Text_BoxPrintedWithMonLogo, MSGBOX_SIGN
+	chooseitem BERRIES_POCKET
+	goto_if_eq VAR_ITEM_ID, ITEM_ORAN_BERRY, InsideOfTruck_EventScript_MovingBox_OranBerry
+	msgbox InsideOfTruck_Text_BoxPrintedWithMonLogo3, MSGBOX_SIGN
+	end
+
+InsideOfTruck_EventScript_MovingBox_OranBerry:
+	msgbox InsideOfTruck_Text_BoxPrintedWithMonLogo2, MSGBOX_SIGN
+	end
+
+InsideOfTruck_Text_BoxPrintedWithMonLogo2:
+	.string "Oh wow, that's totally\n"
+	.string "an Oran Berry!$"
+
+InsideOfTruck_Text_BoxPrintedWithMonLogo3:
+	.string "That's not an Oran Berry.$"
