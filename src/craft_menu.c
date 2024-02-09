@@ -363,7 +363,7 @@ static void ClearCraftTable(void){
     }
 }
 
-static void Task_CreateCraftMenu(TaskFunc followupFunc){ //change to Task_CreateCraftMenu
+static void Task_CreateCraftMenu(TaskFunc followupFunc){
     
     u8 taskId;
 
@@ -378,7 +378,7 @@ static void Task_CreateCraftMenu(TaskFunc followupFunc){ //change to Task_Create
 
 void Task_ShowCraftMenu(u8 taskId){
               
-                //pointer for global task location, acts as state for create switch
+                //pointer for global task location, data[0] acts as state for create switch
     struct Task *task = &gTasks[taskId];
 
     switch(task->data[0])
@@ -449,7 +449,7 @@ static bool8 HandleCraftMenuInput(void)
             PlaySE(SE_SELECT);
 
             gMenuCallback = sCraftTableActions[
-                sCurrentCraftTableItems[sCraftMenuCursorPos][CRAFT_TABLE_ACTION]].func.u8_void;
+                sCurrentCraftTableItems[sCraftMenuCursorPos + 1][CRAFT_TABLE_ACTION]].func.u8_void;
 
             if (gMenuCallback == CraftMenuAddSwapCallback){ //if it's blank
                 //FadeScreen(FADE_TO_BLACK, 0);
@@ -543,7 +543,14 @@ static bool8 HandleCraftMenuInput(void)
         else if (JOY_NEW(A_BUTTON))
         {
             PlaySE(SE_SELECT);
+            if (OptionsCursorPos == 3)
+            {
+                HideOptionsWindow();
+                sCraftState = STATE_TABLE_INPUT;
+            }
+            else {
             sCraftOptionsActions[sCraftOptionsActions_List[OptionsCursorPos]].func.void_u8;
+            }
 
             //remove once function added to callbacks
             return FALSE;
