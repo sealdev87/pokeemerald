@@ -202,12 +202,6 @@ static void BuildCraftTableActions(void){
 
 }
 
-void ShowReturnToFieldCraftMenu(void){
-
-    HideCraftMenu();
-    
-}
-
 static void ShowCraftTableWindow(void)
 {
     //sCraftTableWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_TABLE]);
@@ -376,6 +370,25 @@ static void Task_CreateCraftMenu(TaskFunc followupFunc){
     SetTaskFuncWithFollowupFunc(taskId, CraftMenuTask, followupFunc);
 }
 
+static bool8 FieldCB_ReturnToFieldCraftMenu(void)
+{
+    if (InitCraftMenuStep() == FALSE)
+    {
+        return FALSE;
+    }
+
+    ReturnToField_OpenCraftMenu();
+    return TRUE;
+}
+
+void ShowReturnToFieldCraftMenu(void)
+{
+    sInitCraftMenuData[0] = 0;
+    sCurrentCraftTableItems[sCraftMenuCursorPos][CRAFT_TABLE_ITEM] = gSpecialVar_ItemId;
+    BuildCraftTableActions();
+    gFieldCallback2 = FieldCB_ReturnToFieldCraftMenu;
+}
+
 void Task_ShowCraftMenu(u8 taskId){
               
                 //pointer for global task location, data[0] acts as state for create switch
@@ -452,8 +465,7 @@ static bool8 HandleCraftMenuInput(void)
                 sCurrentCraftTableItems[sCraftMenuCursorPos + 1][CRAFT_TABLE_ACTION]].func.u8_void;
 
             if (gMenuCallback == CraftMenuAddSwapCallback){ //if it's blank
-                //FadeScreen(FADE_TO_BLACK, 0);
-                gMenuCallback = CraftMenuPackUpCallback;
+                FadeScreen(FADE_TO_BLACK, 0);
             }
             else //if it's an item
             {
@@ -567,6 +579,7 @@ static bool8 HandleCraftMenuInput(void)
 
 static bool8 CraftMenuItemOptionsCallback(void){
     
+    //gray cursor
     ShowCraftOptionsWindow();
     sCraftState = STATE_OPTIONS_INPUT;
 }
@@ -589,9 +602,22 @@ static void HideOptionsWindow(void){
 }
 
 static bool8 CraftMenuAddSwapCallback(void){
-    HideOptionsWindow();
+    /*HideOptionsWindow();
     sCraftState = STATE_TABLE_INPUT;
     return TRUE;
+    */
+
+    if (!gPaletteFade.active)
+    {
+        PlayRainStoppingSoundEffect();
+        HideCraftMenu();
+        CleanupOverworldWindowsAndTilemaps();
+        SetMainCallback2(CB2_BagMenuFromCraftMenu);
+
+        return TRUE;
+    }
+
+    return FALSE;  
 }
 
 static bool8 CraftMenuRemoveBagCallback(void){

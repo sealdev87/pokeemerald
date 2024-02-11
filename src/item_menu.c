@@ -564,6 +564,11 @@ void CB2_BagMenuFromStartMenu(void)
     GoToBagMenu(ITEMMENULOCATION_FIELD, POCKETS_COUNT, CB2_ReturnToFieldWithOpenMenu);
 }
 
+void CB2_BagMenuFromCraftMenu(void)
+{
+    GoToBagMenu(ITEMMENULOCATION_CHOOSE_ITEM, POCKETS_COUNT, CB2_ReturnToField_OpenCraftMenu);
+}
+
 void CB2_BagMenuFromBattle(void)
 {
     if (!InBattlePyramid())
@@ -629,9 +634,9 @@ void GoToBagMenu(u8 location, u8 pocket, void ( *exitCallback)())
             gBagPosition.exitCallback = exitCallback;
         if (pocket < POCKETS_COUNT)
             gBagPosition.pocket = pocket;
-        if (gBagPosition.location == ITEMMENULOCATION_CHOOSE_ITEM
-         || gBagPosition.location == ITEMMENULOCATION_BERRY_TREE
-         || gBagPosition.location == ITEMMENULOCATION_BERRY_BLENDER_CRUSH)
+        if (//gBagPosition.location == ITEMMENULOCATION_CHOOSE_ITEM ||
+            gBagPosition.location == ITEMMENULOCATION_BERRY_TREE ||
+            gBagPosition.location == ITEMMENULOCATION_BERRY_BLENDER_CRUSH)
             gBagMenu->pocketSwitchDisabled = TRUE;
         gBagMenu->newScreenCallback = NULL;
         gBagMenu->toSwapPos = NOT_SWAPPING;

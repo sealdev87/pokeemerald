@@ -57,6 +57,7 @@ InsideOfTruck_Text_BoxPrintedWithMonLogo:
 	.string "delivery service.$"
 
 
+@craft... remember to revert this biz
 
 InsideOfTruck_OranBerry::
 	finditem ITEM_ORAN_BERRY
