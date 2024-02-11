@@ -183,6 +183,7 @@ static void PrintCraftTableItems(void);
 static void PrintOptionsMenuGrid(u8, u8, u8);
 static bool32 InitCraftMenuStep(void);
 static void CraftMenuTask(u8 taskId);
+//static void UpdateCraftTable(void);
 static void ClearCraftTable(void);
 static void Task_CreateCraftMenu(TaskFunc followupFunc);
 
@@ -343,6 +344,13 @@ static void CraftMenuTask(u8 taskId){
         SwitchTaskToFollowupFunc(taskId);
 }
 
+/*static void UpdateCraftTable(void){
+
+    BuildCraftTableActions();
+    FillWindowPixelBuffer(sCraftTableWindowId, PIXEL_FILL(0));
+    PrintCraftTableItems();
+}
+*/
 static void ClearCraftTable(void){
     //ClearRoamerLocationData wasn't cool with just = {0} for a 2D array so guess we gotta do it here
     u32 i;
@@ -384,7 +392,8 @@ static bool8 FieldCB_ReturnToFieldCraftMenu(void)
 void ShowReturnToFieldCraftMenu(void)
 {
     sInitCraftMenuData[0] = 0;
-    sCurrentCraftTableItems[sCraftMenuCursorPos][CRAFT_TABLE_ITEM] = gSpecialVar_ItemId;
+    if (gSpecialVar_ItemId != ITEM_NONE)
+        sCurrentCraftTableItems[sCraftMenuCursorPos][CRAFT_TABLE_ITEM] = gSpecialVar_ItemId;
     BuildCraftTableActions();
     gFieldCallback2 = FieldCB_ReturnToFieldCraftMenu;
 }
@@ -432,7 +441,7 @@ static bool8 HandleCraftMenuInput(void)
     switch(sCraftState)
     {
 
-    s32 OptionsCursorPos;
+    u8 OptionsCursorPos;
 
     case STATE_TABLE_INPUT:
 
@@ -462,18 +471,11 @@ static bool8 HandleCraftMenuInput(void)
             PlaySE(SE_SELECT);
 
             gMenuCallback = sCraftTableActions[
-                sCurrentCraftTableItems[sCraftMenuCursorPos + 1][CRAFT_TABLE_ACTION]].func.u8_void;
+                sCurrentCraftTableItems[sCraftMenuCursorPos][CRAFT_TABLE_ACTION]].func.u8_void;
 
-            if (gMenuCallback == CraftMenuAddSwapCallback){ //if it's blank
+            if (gMenuCallback == CraftMenuAddSwapCallback) //if it's blank
                 FadeScreen(FADE_TO_BLACK, 0);
-            }
-            else //if it's an item
-            {
-                //turn arrow gray
-                ShowCraftOptionsWindow();
-                sCraftState = STATE_OPTIONS_INPUT;
-            }
-
+            
             return FALSE;
         }
 
@@ -555,22 +557,24 @@ static bool8 HandleCraftMenuInput(void)
         else if (JOY_NEW(A_BUTTON))
         {
             PlaySE(SE_SELECT);
-            if (OptionsCursorPos == 3)
-            {
+
+            if (OptionsCursorPos == MENU_ACTION_SWAP && CraftMenuAddSwapCallback() == TRUE){
                 HideOptionsWindow();
                 sCraftState = STATE_TABLE_INPUT;
-            }
-            else {
-            sCraftOptionsActions[sCraftOptionsActions_List[OptionsCursorPos]].func.void_u8;
+                FadeScreen(FADE_TO_BLACK, 5);
             }
 
-            //remove once function added to callbacks
+            //gMenuCallback = 
+            sCraftOptionsActions[sCraftOptionsActions_List[OptionsCursorPos]].func.void_u8;
+
+            //if (gMenuCallback == CraftMenuAddSwapCallback)
+            //    FadeScreen(FADE_TO_BLACK, 0); 
+
             return FALSE;
         }
         else if (JOY_NEW(B_BUTTON)){
             PlaySE(SE_SELECT);
             HideOptionsWindow();
-            sCraftState = STATE_TABLE_INPUT;
        }
 
         return FALSE;
@@ -582,6 +586,9 @@ static bool8 CraftMenuItemOptionsCallback(void){
     //gray cursor
     ShowCraftOptionsWindow();
     sCraftState = STATE_OPTIONS_INPUT;
+    gMenuCallback = HandleCraftMenuInput;
+
+    return FALSE;
 }
 
 static bool8 CraftMenuPackUpCallback(void){
@@ -595,6 +602,8 @@ static void HideOptionsWindow(void){
     ClearStdWindowAndFrame(sCraftOptionsWindowId, TRUE);
     sCraftMenuCursorPos = InitMenuGrid(sCraftTableWindowId, FONT_NARROW, 0, 1, 9 * 8, 15, 2, //9*8 from ScriptMenu_MultichoiceGrid, 15 from FONT_NARROW
                                         2, 4, sCraftMenuCursorPos);
+    sCraftState = STATE_TABLE_INPUT;
+
     //ClearWindowTilemap(sCraftReadyUpWindowId);
     //ClearStdWindowAndFrameToTransparent(sCraftReadyUpWindowId, FALSE);
     //ScheduleBgCopyTilemapToVram(0);
@@ -621,21 +630,35 @@ static bool8 CraftMenuAddSwapCallback(void){
 }
 
 static bool8 CraftMenuRemoveBagCallback(void){
+     
+    sCurrentCraftTableItems[sCraftMenuCursorPos][CRAFT_TABLE_ITEM] = ITEM_NONE;
     HideOptionsWindow();
+//    UpdateCraftTable();
+    BuildCraftTableActions();
+    FillWindowPixelBuffer(sCraftTableWindowId, PIXEL_FILL(0));
+    PrintCraftTableItems();
+
+  
     sCraftState = STATE_TABLE_INPUT;
-    return TRUE;    
+    gMenuCallback = HandleCraftMenuInput;
+
+    return FALSE;    
 }
 
 static bool8 CraftMenuReadyCallback(void){
     HideOptionsWindow();
     sCraftState = STATE_TABLE_INPUT;
-    return TRUE;    
+    gMenuCallback = HandleCraftMenuInput;
+
+    return FALSE;      
 }
 
 static bool8 CraftMenuCancelCallback(void){
     HideOptionsWindow();
     sCraftState = STATE_TABLE_INPUT;
-    return TRUE;
+    gMenuCallback = HandleCraftMenuInput;
+
+    return FALSE;  
 }
 
 
