@@ -80,6 +80,7 @@ EWRAM_DATA static u8 sCraftState = 0;
 static bool8 CraftMenuItemOptionsCallback(void);
 static bool8 CraftMenuPackUpCallback(void);
 static bool8 CraftMenuAddSwapCallback(void);
+static bool8 CraftMenuDoOptionsSwapCallback(void);
 static void CraftMenuRemoveBagCallback(void);
 static bool8 CraftMenuReadyCallback(void);
 static bool8 CraftMenuCancelCallback(void);
@@ -249,18 +250,13 @@ static void ShowCraftTableAndInfoWindows(void){
 static void LoadCraftWindows(void){
     //Craft Table
     sCraftTableWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_TABLE]);
-    //PutWindowTilemap(sCraftTableWindowId);
-    //DrawStdWindowFrame(sCraftTableWindowId, FALSE);
 
     //Info
     sCraftInfoWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_INFO]);
-    //PutWindowTilemap(sCraftInfoWindowId);
-    //DrawStdWindowFrame(sCraftInfoWindowId, FALSE);
 
     //Ready/Options
     sCraftOptionsWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_OPTIONS]);
-    //PutWindowTilemap(sCraftReadyUpWindowId);
-    //DrawStdWindowFrame(sCraftReadyUpWindowId, FALSE);
+
 
 }
 
@@ -570,10 +566,11 @@ static bool8 HandleCraftMenuInput(void)
 
                 //Task_WaitForPaletteFade;
 
-                if (CraftMenuAddSwapCallback() == TRUE){
+                CraftMenuDoOptionsSwapCallback();
+
+                //if (CraftMenuAddSwapCallback() == TRUE){
                     FadeScreen(FADE_TO_BLACK, 0);
-                    HideOptionsWindow();
-                }
+                //}
                 break;
             case MENU_ACTION_BAG:
                 CraftMenuRemoveBagCallback();
@@ -658,6 +655,15 @@ static bool8 CraftMenuAddSwapCallback(void){
     }
 
     return FALSE;  
+}
+
+static bool8 CraftMenuDoOptionsSwapCallback(void){
+
+    gMenuCallback = CraftMenuAddSwapCallback;
+
+    sCraftState = STATE_TABLE_INPUT;
+
+    return FALSE;
 }
 
 static void CraftMenuRemoveBagCallback(void){

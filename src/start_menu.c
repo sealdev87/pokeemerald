@@ -865,7 +865,7 @@ static bool8 BattlePyramidRetireCallback(void)
 
 static void InitSave(void)
 {
-    SaveMapView();
+    SaveMapView(); //Camera position for Continue on startup menu screen
     sSaveDialogCallback = SaveConfirmSaveCallback;
     sSavingComplete = FALSE;
 }
