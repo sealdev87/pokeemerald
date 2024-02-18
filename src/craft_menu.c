@@ -75,6 +75,7 @@ EWRAM_DATA static u8 sCraftMenuCursorPos = 0;
 EWRAM_DATA static u8 sInitCraftMenuData[1] = {0};
 EWRAM_DATA static u16 sCurrentCraftTableItems[4][2] = {0}; //craft table items, actions
 EWRAM_DATA static u8 sCraftState = 0;
+EWRAM_DATA static u32 sPauseCounter = 0;
 
 // Menu action callbacks - SWAP/BAG/READY/CANCEL
 static bool8 CraftMenuItemOptionsCallback(void);
@@ -86,6 +87,8 @@ static bool8 CraftMenuReadyCallback(void);
 static bool8 CraftMenuCancelCallback(void);
 static void HideOptionsWindow(void);
 static void Task_WaitForPaletteFade(u8);
+static void Task_AddCraftDelay(u8 taskId);
+static bool8 CraftDelay(void);
 
 // Menu callbacks
 static bool8 HandleCraftMenuInput(void);
@@ -188,6 +191,7 @@ static void CraftMenuTask(u8 taskId);
 static void UpdateCraftTable(void);
 static void ClearCraftTable(void);
 static void Task_CreateCraftMenu(TaskFunc followupFunc);
+
 
 
 static void BuildCraftTableActions(void){
@@ -388,9 +392,16 @@ static bool8 FieldCB_ReturnToFieldCraftMenu(void)
 
 void ShowReturnToFieldCraftMenu(void)
 {
+    u16 *SwapItem;
+
+    SwapItem = &sCurrentCraftTableItems[sCraftMenuCursorPos][CRAFT_TABLE_ITEM];
+
     sInitCraftMenuData[0] = 0;
-    if (gSpecialVar_ItemId != ITEM_NONE)
-        sCurrentCraftTableItems[sCraftMenuCursorPos][CRAFT_TABLE_ITEM] = gSpecialVar_ItemId;
+    if (gSpecialVar_ItemId != ITEM_NONE){
+        AddBagItem(*SwapItem, 1);
+        RemoveBagItem(gSpecialVar_ItemId, 1);
+        *SwapItem = gSpecialVar_ItemId;
+    }
     BuildCraftTableActions();
     gFieldCallback2 = FieldCB_ReturnToFieldCraftMenu;
 }
@@ -420,6 +431,27 @@ void ShowCraftMenu(void){
     Task_CreateCraftMenu(Task_ShowCraftMenu);
     LockPlayerFieldControls();
 }
+
+#define sCraftDelay data[2]
+
+static bool8 CraftDelay(void){
+    if (--sPauseCounter < 1){
+        gMenuCallback == CraftMenuPackUpCallback;
+    }
+
+    return FALSE;
+}
+
+static void Task_AddCraftDelay(u8 taskId)
+{
+    if (--gTasks[taskId].sCraftDelay == 0)
+    {
+
+
+        DestroyTask(taskId);
+    }
+}
+
 
 static bool8 HandleCraftMenuInput(void)
 {
@@ -492,10 +524,12 @@ static bool8 HandleCraftMenuInput(void)
 
         if (JOY_NEW(B_BUTTON)) //If !IsCraftTableEmpty then gmenucallback = CraftMenuPackUpCallback, otherwise just quit
         {
+            sCraftMenuCursorPos = 3;
+            gMenuCallback = CraftMenuPackUpCallback;
+            
             //RemoveExtraCraftMenuWindows(); //if safarizone/battlepyramid flags, remove those windows. In this case,
                                              //it'd be sous chefs 
-            HideCraftMenu();
-            return TRUE;
+            //HideCraftMenu();
         }
 
         return FALSE;
@@ -558,19 +592,8 @@ static bool8 HandleCraftMenuInput(void)
             switch (sCraftOptionsActions_List[OptionsCursorPos])
             {
             case MENU_ACTION_SWAP:
-                
-                //FadeScreen(FADE_TO_BLACK, 0);
-                
-                //BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
-                //CreateTask(Task_WaitForPaletteFade, 0);
-
-                //Task_WaitForPaletteFade;
-
                 CraftMenuDoOptionsSwapCallback();
-
-                //if (CraftMenuAddSwapCallback() == TRUE){
-                    FadeScreen(FADE_TO_BLACK, 0);
-                //}
+                FadeScreen(FADE_TO_BLACK, 0);
                 break;
             case MENU_ACTION_BAG:
                 CraftMenuRemoveBagCallback();
@@ -594,7 +617,7 @@ static bool8 HandleCraftMenuInput(void)
             return FALSE;
         }
         else if (JOY_NEW(B_BUTTON)){
-            PlaySE(SE_WALL_HIT);
+            PlaySE(SE_BALL);
             HideOptionsWindow();
        }
 
@@ -620,9 +643,60 @@ static bool8 CraftMenuItemOptionsCallback(void){
 }
 
 static bool8 CraftMenuPackUpCallback(void){
-    HideCraftMenu();
+    
+    s8 i;
+    u8 taskId;
 
-    return TRUE;
+    //for (i = 3; i > -1; i--){
+    //    sCraftMenuCursorPos = i;
+        
+    if (sPauseCounter-- > 0){
+        return FALSE;
+    }
+
+    switch (sCraftMenuCursorPos)
+    {
+    case 0:
+        if (sCurrentCraftTableItems[0][CRAFT_TABLE_ITEM] == ITEM_NONE){
+            HideCraftMenu();
+            return TRUE;
+        }
+        break;    
+    default:
+        if (sCurrentCraftTableItems[sCraftMenuCursorPos][CRAFT_TABLE_ITEM] != ITEM_NONE){
+            PlaySE(SE_SUDOWOODO_SHAKE);
+            CraftMenuRemoveBagCallback();
+            sCraftMenuCursorPos--;
+            sPauseCounter = 25;
+        }
+        return FALSE;
+        break;
+    }
+    /*
+    //make switch statement?    
+        if (sCurrentCraftTableItems[sCraftMenuCursorPos][CRAFT_TABLE_ITEM] != ITEM_NONE){
+            PlaySE(SE_ICE_CRACK);
+            CraftMenuRemoveBagCallback();
+
+            //taskId = CreateTask(Task_AddCraftDelay, 0);
+            //gTasks[taskId].sCraftDelay = 600; //delay seems to come after everything is done?
+
+            gMenuCallback = CraftDelay;
+            sPauseCounter = 25;
+            //Add delay: gmenucallback = dotimer, if timer ? handlecraftinput : return false
+        }
+
+    //}
+
+    if (sCraftMenuCursorPos < 1 && sCurrentCraftTableItems[0][CRAFT_TABLE_ITEM] == ITEM_NONE){
+        HideCraftMenu();
+        return TRUE;
+    }
+
+    sCraftMenuCursorPos--;
+    */
+   
+    return FALSE;
 }
 
 static void HideOptionsWindow(void){
@@ -668,12 +742,17 @@ static bool8 CraftMenuDoOptionsSwapCallback(void){
 
 static void CraftMenuRemoveBagCallback(void){
      
-    sCurrentCraftTableItems[sCraftMenuCursorPos][CRAFT_TABLE_ITEM] = ITEM_NONE;
+    u16 *CraftItem;
+
+    CraftItem = &sCurrentCraftTableItems[sCraftMenuCursorPos][CRAFT_TABLE_ITEM]; 
+    
+    AddBagItem(*CraftItem, 1);
+    *CraftItem = ITEM_NONE;
+
     UpdateCraftTable();
     PutWindowTilemap(sCraftTableWindowId);
     ScheduleBgCopyTilemapToVram(0);
-    HideOptionsWindow(); 
-
+    HideOptionsWindow();
 }
 
 static bool8 CraftMenuReadyCallback(void){
@@ -705,7 +784,12 @@ void HideCraftMenu(void){
         sCraftInfoWindowId = WINDOW_NONE;
     }
 
+    if (sCraftOptionsWindowId != WINDOW_NONE){
+        RemoveWindow(sCraftOptionsWindowId);
+        sCraftOptionsWindowId = WINDOW_NONE;
+    }
+
+
     ScriptUnfreezeObjectEvents();
     UnlockPlayerFieldControls();
-
 }
