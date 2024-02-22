@@ -62,6 +62,12 @@ enum CraftState {
     STATE_CONFIRM_PACKUP,
 };
 
+// Confirm Messages
+enum CraftConfirmMessages{
+    CRAFT_PACKUP_CONFIRM,
+    CRAFT_READY_CONFIRM
+};
+
 // IWRAM common
 bool8 (*gMenuCallback)(void);
 
@@ -76,19 +82,35 @@ EWRAM_DATA static u8 sInitCraftMenuData[1] = {0};
 EWRAM_DATA static u16 sCurrentCraftTableItems[4][2] = {0}; //craft table items, actions
 EWRAM_DATA static u8 sCraftState = 0;
 EWRAM_DATA static u32 sPauseCounter = 0;
+EWRAM_DATA static u8 (*sCraftDialogCallback)(void) = NULL;
+EWRAM_DATA static u8 CraftMessage = 0;
 
 // Menu action callbacks - SWAP/BAG/READY/CANCEL
 static bool8 CraftMenuItemOptionsCallback(void);
-static bool8 CraftMenuPackUpCallback(void);
+static u8 CraftMenuPackUpCallback(void);
 static bool8 CraftMenuAddSwapCallback(void);
 static bool8 CraftMenuDoOptionsSwapCallback(void);
 static void CraftMenuRemoveBagCallback(void);
 static bool8 CraftMenuReadyCallback(void);
 static bool8 CraftMenuCancelCallback(void);
+
+// Functions
 static void HideOptionsWindow(void);
 static void Task_WaitForPaletteFade(u8);
 static void Task_AddCraftDelay(u8 taskId);
 static bool8 CraftDelay(void);
+static u8 CraftPackUpCheckItem(void);
+static u8 CraftPackUpFinish(void);
+
+// Messaging
+static void CraftReturnToTableFromDialogue(void);
+static u8 CraftPackUpConfirmInputCallback(void);
+static u8 CraftYesNoCallback(void);
+static void ShowCraftMessage(const u8 *message, u8 (*craftCallback)(void));
+static u8 sCraftPackupConfirmCallback(void);
+static u8 WriteCraftMessageCallback(void);
+static bool8 CraftStartConfirmCallback(void);
+static bool8 CraftConfirmCallback(void);
 
 // Menu callbacks
 static bool8 HandleCraftMenuInput(void);
@@ -202,6 +224,7 @@ static void BuildCraftTableActions(void){
         if(sCurrentCraftTableItems[i][CRAFT_TABLE_ITEM] == ITEM_NONE ||
             sCurrentCraftTableItems[i][CRAFT_TABLE_ITEM] > ITEM_OLD_SEA_MAP){
             
+            sCurrentCraftTableItems[i][CRAFT_TABLE_ITEM] = ITEM_NONE;
             sCurrentCraftTableItems[i][CRAFT_TABLE_ACTION] = TABLE_ACTION_BLANK;
         }
         else sCurrentCraftTableItems[i][CRAFT_TABLE_ACTION] = TABLE_ACTION_ITEM;
@@ -350,6 +373,8 @@ static void UpdateCraftTable(void){
     BuildCraftTableActions();
     FillWindowPixelBuffer(sCraftTableWindowId, PIXEL_FILL(TEXT_COLOR_WHITE));
     PrintCraftTableItems();
+    PutWindowTilemap(sCraftTableWindowId);
+    ScheduleBgCopyTilemapToVram(0);
 }
 
 static void ClearCraftTable(void){
@@ -524,12 +549,14 @@ static bool8 HandleCraftMenuInput(void)
 
         if (JOY_NEW(B_BUTTON)) //If !IsCraftTableEmpty then gmenucallback = CraftMenuPackUpCallback, otherwise just quit
         {
-            sCraftMenuCursorPos = 3;
-            gMenuCallback = CraftMenuPackUpCallback;
+            sPauseCounter = 0;
+            CraftMessage = CRAFT_PACKUP_CONFIRM;
+            gMenuCallback = CraftStartConfirmCallback; //let the gMenu pinball begin
             
             //RemoveExtraCraftMenuWindows(); //if safarizone/battlepyramid flags, remove those windows. In this case,
                                              //it'd be sous chefs 
             //HideCraftMenu();
+            //return True;
         }
 
         return FALSE;
@@ -587,23 +614,24 @@ static bool8 HandleCraftMenuInput(void)
         }
         else if (JOY_NEW(A_BUTTON))
         {
-            PlaySE(SE_SELECT);
 
             switch (sCraftOptionsActions_List[OptionsCursorPos])
             {
             case MENU_ACTION_SWAP:
+                PlaySE(SE_SELECT);
                 CraftMenuDoOptionsSwapCallback();
                 FadeScreen(FADE_TO_BLACK, 0);
                 break;
             case MENU_ACTION_BAG:
+                PlaySE(SE_SELECT);
                 CraftMenuRemoveBagCallback();
                 break;
             case MENU_ACTION_READY:
+                PlaySE(SE_SELECT);
                 CraftMenuReadyCallback();
                 break;
             case MENU_ACTION_CANCEL:
             default:
-                PlaySE(SE_WALL_HIT);
                 CraftMenuCancelCallback();
                 break;
             }
@@ -617,8 +645,7 @@ static bool8 HandleCraftMenuInput(void)
             return FALSE;
         }
         else if (JOY_NEW(B_BUTTON)){
-            PlaySE(SE_BALL);
-            HideOptionsWindow();
+            CraftMenuCancelCallback();
        }
 
         return FALSE;
@@ -642,36 +669,117 @@ static bool8 CraftMenuItemOptionsCallback(void){
     return FALSE;
 }
 
-static bool8 CraftMenuPackUpCallback(void){
+enum PackUpState {
+    NO_ITEM,
+    YES_ITEM
+};
+
+static u8 CraftPackUpCheckItem(void){
+    if (sCurrentCraftTableItems[sCraftMenuCursorPos][CRAFT_TABLE_ITEM] == ITEM_NONE || 
+        sCurrentCraftTableItems[sCraftMenuCursorPos][CRAFT_TABLE_ITEM] > ITEM_OLD_SEA_MAP)
+    {
+        return NO_ITEM;
+    }
+    else {
+        return YES_ITEM;
+    }
+}
+
+enum CraftMessageState {
+    CRAFT_MESSAGE_IN_PROGRESS,
+    CRAFT_MESSAGE_CONFIRM,
+    CRAFT_MESSAGE_CANCEL
+};
+
+static bool8 CraftPackUpFinish(void){
+    HideCraftMenu();
+    return CRAFT_MESSAGE_CONFIRM;
+}
+
+static u8 CraftMenuPackUpCallback(void){
     
     s8 i;
     u8 taskId;
+    u16 *CraftItem;
 
-    //for (i = 3; i > -1; i--){
-    //    sCraftMenuCursorPos = i;
-        
-    if (sPauseCounter-- > 0){
+    CraftItem = &sCurrentCraftTableItems[sCraftMenuCursorPos][CRAFT_TABLE_ITEM]; 
+
+    //This times out the removal ok but freezes on the last item / empty items
+    //Backing out of menu is slow if item in pos = 0 ',:/
+
+    //if (sPauseCounter-- > 0)
+    //    return FALSE;
+    
+
+//switch statement attempt 2    
+/*/    switch (CraftPackUpCheckItem())
+    {
+    case NO_ITEM:
+        if (sCraftMenuCursorPos == 0) //done packing up
+        {
+            HideCraftMenu();
+            return TRUE; 
+        }
+        sCraftMenuCursorPos--;
+        return FALSE;    
+    case YES_ITEM:
+        PlaySE(SE_BALL);
+        CraftMenuRemoveBagCallback();
+        sPauseCounter = 25;
         return FALSE;
     }
 
-    switch (sCraftMenuCursorPos)
-    {
-    case 0:
-        if (sCurrentCraftTableItems[0][CRAFT_TABLE_ITEM] == ITEM_NONE){
+    return FALSE;
+*/
+
+//if statements attempt 2
+    /*if (sCurrentCraftTableItems[sCraftMenuCursorPos][CRAFT_TABLE_ITEM] == ITEM_NONE){
+        if (sCraftMenuCursorPos == 0){
             HideCraftMenu();
             return TRUE;
         }
-        break;    
-    default:
-        if (sCurrentCraftTableItems[sCraftMenuCursorPos][CRAFT_TABLE_ITEM] != ITEM_NONE){
-            PlaySE(SE_SUDOWOODO_SHAKE);
-            CraftMenuRemoveBagCallback();
-            sCraftMenuCursorPos--;
-            sPauseCounter = 25;
-        }
+    }
+    else {
+        PlaySE(SE_SUDOWOODO_SHAKE);
+        CraftMenuRemoveBagCallback();
+        sPauseCounter = 25;
         return FALSE;
+    }
+
+    sCraftMenuCursorPos--;
+    UpdateCraftTable();
+    sCraftMenuCursorPos = InitMenuGrid(sCraftTableWindowId, FONT_NARROW, 0, 1, 9 * 8, 15, 2, //9*8 from ScriptMenu_MultichoiceGrid, 15 from FONT_NARROW
+                                    2, 4, sCraftMenuCursorPos);
+    return FALSE;
+*/
+
+//switch statement attempt 1 (only working version)
+
+    switch (sCraftMenuCursorPos)
+    {
+    case 0: //if this has an item, it freezes
+        if (*CraftItem == ITEM_NONE){
+
+            sCraftDialogCallback = CraftPackUpFinish;
+            break;
+            //return CraftPackUpFinish();
+            //gMenuCallback = CraftPackUpFinish;
+        }
+
+    default:
+        if (*CraftItem != ITEM_NONE){
+            PlaySE(SE_BALL);
+            CraftMenuRemoveBagCallback();
+            sPauseCounter = 25;  //check out Task_AnimateAfterDelay
+        }
+        sCraftMenuCursorPos != 0 ? --sCraftMenuCursorPos : 0;
         break;
     }
+
+    return CRAFT_MESSAGE_IN_PROGRESS;
+    //return FALSE;
+    
+//if statements attempt 1    
     /*
     //make switch statement?    
         if (sCurrentCraftTableItems[sCraftMenuCursorPos][CRAFT_TABLE_ITEM] != ITEM_NONE){
@@ -695,20 +803,14 @@ static bool8 CraftMenuPackUpCallback(void){
 
     sCraftMenuCursorPos--;
     */
-   
-    return FALSE;
 }
 
-static void HideOptionsWindow(void){
-
+static void HideOptionsWindow(void)
+{
     ClearStdWindowAndFrame(sCraftOptionsWindowId, TRUE);
     sCraftMenuCursorPos = InitMenuGrid(sCraftTableWindowId, FONT_NARROW, 0, 1, 9 * 8, 15, 2, //9*8 from ScriptMenu_MultichoiceGrid, 15 from FONT_NARROW
                                         2, 4, sCraftMenuCursorPos);
     sCraftState = STATE_TABLE_INPUT;
-
-    //ClearWindowTilemap(sCraftReadyUpWindowId);
-    //ClearStdWindowAndFrameToTransparent(sCraftReadyUpWindowId, FALSE);
-    //ScheduleBgCopyTilemapToVram(0);
 
 }
 
@@ -746,12 +848,12 @@ static void CraftMenuRemoveBagCallback(void){
 
     CraftItem = &sCurrentCraftTableItems[sCraftMenuCursorPos][CRAFT_TABLE_ITEM]; 
     
-    AddBagItem(*CraftItem, 1);
-    *CraftItem = ITEM_NONE;
+    if (*CraftItem != ITEM_NONE){
+        AddBagItem(*CraftItem, 1);
+        *CraftItem = ITEM_NONE;
+    }
 
     UpdateCraftTable();
-    PutWindowTilemap(sCraftTableWindowId);
-    ScheduleBgCopyTilemapToVram(0);
     HideOptionsWindow();
 }
 
@@ -763,12 +865,11 @@ static bool8 CraftMenuReadyCallback(void){
 }
 
 static bool8 CraftMenuCancelCallback(void){
+    PlaySE(SE_FAILURE);
     HideOptionsWindow();
-    gMenuCallback = HandleCraftMenuInput;
 
     return FALSE;  
 }
-
 
 void HideCraftMenu(void){
 
@@ -793,3 +894,130 @@ void HideCraftMenu(void){
     ScriptUnfreezeObjectEvents();
     UnlockPlayerFieldControls();
 }
+
+
+static const u8 sText_ConfirmPackUp[] = _("Would you like to pack up?");
+
+static void CraftReturnToTableFromDialogue(void)
+{
+    ClearDialogWindowAndFrame(0, TRUE);
+    ClearDialogWindowAndFrameToTransparent(0, FALSE);
+    
+    sInitCraftMenuData[0] = 0;
+    while (!InitCraftMenuStep())
+        ;
+}
+
+static u8 CraftPackUpConfirmInputCallback(void)
+{
+    switch (Menu_ProcessInputNoWrapClearOnChoose())
+    {
+    case 0: // Yes
+        //ClearDialogWindowAndFrame(0, TRUE);
+        CraftReturnToTableFromDialogue();
+        sCraftMenuCursorPos = 3;
+
+        sCraftDialogCallback = CraftMenuPackUpCallback;
+        break;
+        //return CRAFT_MESSAGE_CONFIRM;
+    case MENU_B_PRESSED:
+    case 1:
+        CraftReturnToTableFromDialogue();
+        return CRAFT_MESSAGE_CANCEL;
+    }
+
+    return CRAFT_MESSAGE_IN_PROGRESS;
+}
+
+static u8 CraftYesNoCallback(void)
+{
+    u8 MessageState = abs(CraftMessage - 1);
+    
+    DisplayYesNoMenuWithDefault(MessageState); // Show Yes/No menu, 0 = Yes, 1 = No
+    
+    switch (CraftMessage)
+    {
+    case CRAFT_PACKUP_CONFIRM:
+        sCraftDialogCallback = CraftPackUpConfirmInputCallback;
+        break;
+    
+    case CRAFT_READY_CONFIRM:
+        break;
+    }
+    
+    return CRAFT_MESSAGE_IN_PROGRESS;
+}
+
+static void ShowCraftMessage(const u8 *message, u8 (*craftCallback)(void))
+{
+    StringExpandPlaceholders(gStringVar4, message);
+    LoadMessageBoxAndFrameGfx(0, TRUE);
+    AddTextPrinterForMessage_2(TRUE);
+    sCraftDialogCallback = craftCallback;
+}
+
+static u8 sCraftPackupConfirmCallback(void)
+{
+    //ClearStdWindowAndFrame(GetStartMenuWindowId(), FALSE);
+    //RemoveStartMenuWindow(); //removes and sets to window_none
+    //ShowSaveInfoWindow(); //craft copywin_gfx
+
+    HideCraftMenu();
+    FreezeObjectEvents();
+    LockPlayerFieldControls();
+
+    ShowCraftMessage(sText_ConfirmPackUp, CraftYesNoCallback);
+    
+    return CRAFT_MESSAGE_IN_PROGRESS;
+}
+
+static u8 WriteCraftMessageCallback(void)
+{
+    // True if text is still printing
+    if (RunTextPrintersAndIsPrinter0Active() == TRUE)
+    {
+        return CRAFT_MESSAGE_IN_PROGRESS;
+    }
+    
+    return sCraftDialogCallback();
+}
+
+static bool8 CraftStartConfirmCallback(void)
+{
+    switch (CraftMessage)
+    {
+    case CRAFT_PACKUP_CONFIRM:
+        sCraftDialogCallback = sCraftPackupConfirmCallback;
+        break;
+    case CRAFT_READY_CONFIRM:
+        //sCraftDialogCallback = sCraftReadyConfirmCallback;
+        break;
+    }
+
+    gMenuCallback = CraftConfirmCallback;
+
+    return FALSE;
+}
+
+static bool8 CraftConfirmCallback(void){
+        
+    switch (WriteCraftMessageCallback())
+    {
+    case CRAFT_MESSAGE_IN_PROGRESS:
+        return FALSE;
+    case CRAFT_MESSAGE_CONFIRM:
+        switch (CraftMessage)
+        {
+        case CRAFT_PACKUP_CONFIRM:
+            return TRUE;
+        case CRAFT_READY_CONFIRM:
+            break;
+        }
+    case CRAFT_MESSAGE_CANCEL:
+        gMenuCallback = HandleCraftMenuInput;
+        return FALSE;
+    }
+
+    return FALSE;
+}
+
