@@ -549,7 +549,17 @@ static bool8 HandleCraftMenuInput(void)
 
         if (JOY_NEW(B_BUTTON)) //If !IsCraftTableEmpty then gmenucallback = CraftMenuPackUpCallback, otherwise just quit
         {
-            sPauseCounter = 0;
+            //Check if 
+            u8 i;
+            for (i = 0; i < 4; i++){
+                if (sCurrentCraftTableItems[i][CRAFT_TABLE_ITEM] != ITEM_NONE)
+                    break;
+            }
+            if (i == 4){
+                HideCraftMenu();
+                return TRUE;
+            }
+
             CraftMessage = CRAFT_PACKUP_CONFIRM;
             gMenuCallback = CraftStartConfirmCallback; //let the gMenu pinball begin
             
@@ -692,6 +702,7 @@ enum CraftMessageState {
 };
 
 static bool8 CraftPackUpFinish(void){
+    PlaySE(SE_RG_BAG_POCKET);
     HideCraftMenu();
     return CRAFT_MESSAGE_CONFIRM;
 }
@@ -708,7 +719,7 @@ static u8 CraftMenuPackUpCallback(void){
     //Backing out of menu is slow if item in pos = 0 ',:/
 
     //if (sPauseCounter-- > 0)
-    //    return FALSE;
+    //    return CRAFT_MESSAGE_IN_PROGRESS;
     
 
 //switch statement attempt 2    
@@ -865,7 +876,7 @@ static bool8 CraftMenuReadyCallback(void){
 }
 
 static bool8 CraftMenuCancelCallback(void){
-    PlaySE(SE_FAILURE);
+    PlaySE(SE_BOO);
     HideOptionsWindow();
 
     return FALSE;  
@@ -897,6 +908,10 @@ void HideCraftMenu(void){
 
 
 static const u8 sText_ConfirmPackUp[] = _("Would you like to pack up?");
+static const u8 sText_ConfirmReady[] = _("Craft {STR_VAR_1}?");
+static const u8 sText_CraftNo[] = _("This won't make anything useful...");
+static const u8 sText_WouldYouLikeToCraft[] = _("There's a crafting table.\nWant to craft something?");
+
 
 static void CraftReturnToTableFromDialogue(void)
 {
@@ -916,7 +931,7 @@ static u8 CraftPackUpConfirmInputCallback(void)
         //ClearDialogWindowAndFrame(0, TRUE);
         CraftReturnToTableFromDialogue();
         sCraftMenuCursorPos = 3;
-
+        sPauseCounter = 30;
         sCraftDialogCallback = CraftMenuPackUpCallback;
         break;
         //return CRAFT_MESSAGE_CONFIRM;
@@ -931,7 +946,8 @@ static u8 CraftPackUpConfirmInputCallback(void)
 
 static u8 CraftYesNoCallback(void)
 {
-    u8 MessageState = abs(CraftMessage - 1);
+    u8 MessageState; 
+    MessageState = CraftMessage > 1 ? 0 : abs(CraftMessage - 1);
     
     DisplayYesNoMenuWithDefault(MessageState); // Show Yes/No menu, 0 = Yes, 1 = No
     
