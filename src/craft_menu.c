@@ -217,8 +217,8 @@ static void ClearCraftTable(void);
 static void Task_CreateCraftMenu(TaskFunc followupFunc);
 
 static const u16 Craft_Recipes[][6] = {
-//  {ITEM_1,        ITEM_2,         ITEM_3,         ITEM_4,               ITEM_PRODUCT, QUANTITY},    
-    {ITEM_POTION,   ITEM_PECHA_BERRY, 0,            0,                    ITEM_ANTIDOTE, 3},
+//  {ITEM_1,        ITEM_2,         ITEM_3,         ITEM_4,               ITEM_PRODUCT,  QUANTITY},    
+    {0,             0,              ITEM_POTION,    ITEM_PECHA_BERRY,     ITEM_ANTIDOTE, 3},
 };
 
 //Menu / Window Functions
@@ -954,8 +954,13 @@ static void OrganizeCraftItems(u16 *SwapCraftOrder){
     u16 CraftSwapItem;
     //u16 SwapCraftOrder[4];
 
+    //Set up temp list
+    for (i = 0; i < 4; i++){
+        SwapCraftOrder[i] = sCurrentCraftTableItems[i][CRAFT_TABLE_ITEM];
+    }
+
     //split into two groups and arrange ex: "DB CA" -> "BD AC"
-    for (i = 0; i < 3; i + 2){        
+    for (i = 0; i < 3; i += 2){        
         if (SwapCraftOrder[i] > SwapCraftOrder[i + 1])
             SWAP(SwapCraftOrder[i], SwapCraftOrder[i + 1], CraftSwapItem);
     }
@@ -982,17 +987,16 @@ static u16 FindCraftProduct(int PrdOrQty){
     u16 CraftProduct = ITEM_NONE;
     u16 CraftItems[4];
 
+    OrganizeCraftItems(CraftItems);
+    /*//----------------------------------
+    
     //Set up temp list
     for (i = 0; i < 4; i++){
         CraftItems[i] = sCurrentCraftTableItems[i][CRAFT_TABLE_ITEM];
     }
 
-
-    /*//OrganizeCraftItems(CraftItems);
-    //----------------------------------
-
     //split into two groups and arrange ex: "DB CA" -> "BD AC"
-    for (i = 0; i < 3; i + 2){        
+    for (i = 0; i < 3; i += 2){        
         if (CraftItems[i] > CraftItems[i + 1])
             SWAP(CraftItems[i], CraftItems[i + 1], CraftSwapItem);
     }
@@ -1042,7 +1046,7 @@ static u16 FindCraftProduct(int PrdOrQty){
 //User Interaction
 static const u8 sText_ConfirmPackUp[] = _("Would you like to pack up?");
 static const u8 sText_ConfirmReady[] = _("This looks like it'll be good.\nCraft {STR_VAR_1}?");
-static const u8 sText_CraftNo[] = _("This won't make anything useful...");
+static const u8 sText_CraftNo[] = _("Hmm, this won't make anything useful...");
 static const u8 sText_WouldYouLikeToCraft[] = _("There's a crafting table.\nWant to craft something?");
 
 static void CraftReturnToTableFromDialogue(void)
@@ -1070,9 +1074,10 @@ static u8 CraftPackUpConfirmInputCallback(void)
             sPauseCounter = 30;
             sCraftDialogCallback = CraftMenuPackUpCallback;
             break;
-        
         case CRAFT_READY_CONFIRM:
             sCraftDialogCallback = CraftMenuReadyCallback;
+            break;
+        default:
             break;
         }
         break;
@@ -1108,6 +1113,18 @@ static u8 CraftYesNoCallback(void)
     return CRAFT_MESSAGE_IN_PROGRESS;
 }
 
+static u8 CraftMessageWaitForButtonPress(void){
+
+    if (!IsTextPrinterActive(0) && (JOY_NEW(A_BUTTON) || JOY_NEW(B_BUTTON))){
+
+        CraftReturnToTableFromDialogue();
+        return CRAFT_MESSAGE_CANCEL;
+    }
+
+    return CRAFT_MESSAGE_IN_PROGRESS;
+
+}
+
 static void ShowCraftMessage(const u8 *message, u8 (*craftCallback)(void))
 {
     StringExpandPlaceholders(gStringVar4, message);
@@ -1123,7 +1140,7 @@ static u8 sCraftPackupConfirmCallback(void)
     //ShowSaveInfoWindow(); //craft copywin_gfx
 
     const u8 *message;
-
+    
     HideCraftMenu();
     FreezeObjectEvents();
     LockPlayerFieldControls();
@@ -1139,10 +1156,12 @@ static u8 sCraftPackupConfirmCallback(void)
             CopyItemName(FindCraftProduct(CRAFT_PRODUCT), gStringVar1);
             StringExpandPlaceholders(gStringVar4, sText_ConfirmReady);
             message = gStringVar4;
-            //message = sText_ConfirmReady;
+            break;
         }
         else
             message = sText_CraftNo;
+            ShowCraftMessage(message, CraftMessageWaitForButtonPress);
+            return CRAFT_MESSAGE_IN_PROGRESS;
         break;
     }
 

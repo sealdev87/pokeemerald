@@ -1090,7 +1090,7 @@ static u8 SaveDoSaveCallback(void)
     }
 
     if (saveStatus == SAVE_STATUS_OK)
-        ShowSaveMessage(gText_PlayerSavedGame, SaveSuccessCallback);
+        ShowSaveMessage(gText_PlayerSavedGame, SaveSuccessCallback); //craft wait for printing, play se, wait for se & timer then close
     else
         ShowSaveMessage(gText_SaveError, SaveErrorCallback);
 
