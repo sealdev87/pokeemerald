@@ -74,4 +74,11 @@ u8 ItemId_GetBattleUsage(u16 itemId);
 ItemUseFunc ItemId_GetBattleFunc(u16 itemId);
 u8 ItemId_GetSecondaryId(u16 itemId);
 
+//Thanks ghoulslash!
+#define ITEM_TAG 0x2722 //same as money label
+
+void ShowItemIconSprite(u16 item, bool8 flash, u8 screen_x, u8 screen_y);
+void DestroyItemIconSprite(void);
+
+
 #endif // GUARD_ITEM_H

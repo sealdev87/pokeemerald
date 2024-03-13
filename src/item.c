@@ -23,10 +23,6 @@
 static bool8 CheckPyramidBagHasItem(u16 itemId, u16 count);
 static bool8 CheckPyramidBagHasSpace(u16 itemId, u16 count);
 
-//Thanks ghoulslash!
-static void ShowItemIconSprite(u16 item, bool8 flash, u8 screen_x, u8 screen_y);
-static void DestroyItemIconSprite(void);
-
 EWRAM_DATA struct BagPocket gBagPockets[POCKETS_COUNT] = {0};
 EWRAM_DATA u8 sItemIconSpriteId = 0;
 EWRAM_DATA u8 sItemIconSpriteId2 = 0;
@@ -956,9 +952,8 @@ u8 ItemId_GetSecondaryId(u16 itemId)
 
 #define ITEM_ICON_X 26
 #define ITEM_ICON_Y 24
-#define ITEM_TAG 0x2722 //same as money label
 
-static void ShowItemIconSprite(u16 item, bool8 flash, u8 screen_x, u8 screen_y)
+void ShowItemIconSprite(u16 item, bool8 flash, u8 screen_x, u8 screen_y)
 {
     s16 x, y;
     u8 iconSpriteId;   
@@ -975,6 +970,8 @@ static void ShowItemIconSprite(u16 item, bool8 flash, u8 screen_x, u8 screen_y)
         spriteId2 = AddItemIconSprite(ITEM_TAG, ITEM_TAG, item);
     if (iconSpriteId != MAX_SPRITES)
     {
+
+        //dropping this since we're specifying in the parameters
         /*if (!firstTime)
         {
             //show in message box
@@ -989,6 +986,7 @@ static void ShowItemIconSprite(u16 item, bool8 flash, u8 screen_x, u8 screen_y)
         }
         */
 
+        //parameters!
         x = screen_x;
         y = screen_y;
 
@@ -1009,7 +1007,7 @@ static void ShowItemIconSprite(u16 item, bool8 flash, u8 screen_x, u8 screen_y)
     sItemIconSpriteId = iconSpriteId;
 }
 
-static void DestroyItemIconSprite(void)
+void DestroyItemIconSprite(void)
 {
     FreeSpriteTilesByTag(ITEM_TAG);
     FreeSpritePaletteByTag(ITEM_TAG);
