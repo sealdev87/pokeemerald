@@ -173,8 +173,8 @@ static const u8 sText_WouldYouLikeToCraft[] = _("There's a crafting table.\nWant
     //each item should get array w craftinprocess messages & requirements (indoors or heat/water/spice/tools/ice)
 static const u8 sText_CraftInProcess[] = _("Setting up... Prepping ingredients... Assembling...");
 static const u8 sText_ItemCrafted[] = _("{STR_VAR_1} crafted!");
-static const u8 sText_PressAtoAddItem[] = _("{COLOR BLUE}{A_BUTTON} {COLOR DARK_GRAY}ADD ITEM");
-static const u8 sText_PressBtoLeave[] = _("{B_BUTTON} LEAVE");
+static const u8 sText_PressAtoAddItem[] = _("{COLOR_HIGHLIGHT_SHADOW}{LIGHT_BLUE}{WHITE}{BLUE}{A_BUTTON}   {COLOR DARK_GRAY}{SHADOW LIGHT_GRAY}ADD ITEM");
+static const u8 sText_PressBtoLeave[] = _("{B_BUTTON}   LEAVE");
 static const u8 sText_InBag[] = _("In Bag:");
 static const u8 sText_InBagQty[] = _("x{STR_VAR_1}");
 
@@ -432,9 +432,10 @@ static void UpdateCraftInfoWindow(void){
      blank: A to add item & "items ? str to craft : B to leave")
 
     //Declare Vars
-    u16 itemId;
+    u16 itemId, palette;
     bool32 handleFlash;
     u32 quantityInBag;
+
 
     //Init Vars
     itemId = sCurrentCraftTableItems[sCraftMenuCursorPos][CRAFT_TABLE_ITEM];
@@ -475,16 +476,21 @@ static void UpdateCraftInfoWindow(void){
            (B) Pack up   STR-> Ready
 
         //Add & Pack Up
-        AddTextPrinterParameterized(sCraftInfoWindowId, FONT_NARROW, sText_PressAtoAddItem, 8, 1, TEXT_SKIP_DRAW, NULL);
+        //StringExpandPlaceholders(gStringVar4, sText_PressAtoAddItem);
+        AddTextPrinterParameterized(sCraftInfoWindowId, FONT_SMALL, sText_PressAtoAddItem, 8, 1, TEXT_SKIP_DRAW, NULL);
 
         //START = Ready
         if (!IsCraftTableEmpty())
         {
-            BlitBitmapToWindow(sCraftInfoWindowId, sStartButton_Gfx, 6, 16, 24, 16);
-            AddTextPrinterParameterized(sCraftInfoWindowId, FONT_NARROW, sText_Ready, 32, 16, TEXT_SKIP_DRAW, NULL);
+            palette = RGB_BLACK;
+            LoadPalette(&palette, BG_PLTT_ID(15) + 10, PLTT_SIZEOF(1));
+
+            BlitBitmapToWindow(sCraftInfoWindowId, sStartButton_Gfx, 0, 16, 24, 16);
+            AddTextPrinterParameterized(sCraftInfoWindowId, FONT_SMALL, sText_Ready, 25, 16, TEXT_SKIP_DRAW, NULL);
+
         }
         else
-            AddTextPrinterParameterized(sCraftInfoWindowId, FONT_NARROW, sText_PressBtoLeave, 8, 16, TEXT_SKIP_DRAW, NULL);
+            AddTextPrinterParameterized(sCraftInfoWindowId, FONT_SMALL, sText_PressBtoLeave, 8, 16, TEXT_SKIP_DRAW, NULL);
     }
 
     //Draw! (Insert cowboy emoji)
@@ -505,6 +511,12 @@ static void ClearCraftTable(void){
         sCurrentCraftTableItems[i][CRAFT_TABLE_ITEM] = ITEM_NONE;
         sCurrentCraftTableItems[i][CRAFT_TABLE_ACTION] = TABLE_ACTION_BLANK;
     }
+}
+
+static void ClearCraftInfo(u8 ItemSpot)
+{
+    if (sCurrentCraftTableItems[ItemSpot][CRAFT_TABLE_ITEM] > 0 || sCurrentCraftTableItems[ItemSpot][CRAFT_TABLE_ITEM] < ITEMS_COUNT)
+        DestroyItemIconSprite();
 }
 
 static void Task_CreateCraftMenu(TaskFunc followupFunc){
@@ -609,13 +621,18 @@ static bool8 HandleCraftMenuInput(void)
 {
     /*update info window with every cursor move (item: xQty in Bag & str to craft, blank: A to add item & "items ? str to craft : B to leave")
       if clicking on something, either add or show options
+      
       options = SWAP/READY/BAG/CANCEL
       swap - get different item, ready - check craft recipe, bag - remove item, cancel - close options (update info window!)
       ready: Want to craft this item? YES/NO
+      
       Crafting... mixing... combining... item obtained!
+      
       packup: Pack up items? YES/NO
       Item4 -> blank, item3 -> blank, item2 -> blank, item1 -> blank, exit
+      
       Select for secret recipe book? Or add to options once flagged
+      
       soux chefs: charmander, squirtle, bulbasaur, aron, snorunt (heat, water, spices, salt/tools, ice)
     */
 
@@ -669,6 +686,7 @@ static bool8 HandleCraftMenuInput(void)
             if (IsCraftTableEmpty())
                 PlaySE(SE_BOO);
             else {
+                ClearCraftInfo(sCraftMenuCursorPos);
                 CraftMessage = CRAFT_READY_CONFIRM;
                 gMenuCallback = CraftStartConfirmCallback;
             }
@@ -688,14 +706,6 @@ static bool8 HandleCraftMenuInput(void)
 
         if (JOY_NEW(B_BUTTON)) //If !IsCraftTableEmpty then gmenucallback = CraftMenuPackUpCallback, otherwise just quit
         {
-            //Check if craft table is empty
-            /*u32 i;
-            for (i = 0; i < 4; i++){
-                if (sCurrentCraftTableItems[i][CRAFT_TABLE_ITEM] != ITEM_NONE)
-                    break;
-            }
-            if (i == 4){
-            */
             if (IsCraftTableEmpty())
             {
                 PlaySE(SE_WIN_OPEN);
@@ -703,6 +713,7 @@ static bool8 HandleCraftMenuInput(void)
                 return TRUE;
             }
 
+            ClearCraftInfo(sCraftMenuCursorPos);
             CraftMessage = CRAFT_PACKUP_CONFIRM;
             gMenuCallback = CraftStartConfirmCallback; //let the gMenu pinball begin
             
@@ -710,15 +721,20 @@ static bool8 HandleCraftMenuInput(void)
                                              //it'd be sous chefs 
             //HideCraftMenu();
             //return True;
+            return FALSE;
         }
 
-        if (sCraftMenuCursorPos != OldPos)
-        {
+        //if (sCraftMenuCursorPos != OldPos)
+        /*{
             if (sCurrentCraftTableItems[OldPos][CRAFT_TABLE_ITEM] && sCurrentCraftTableItems[OldPos][CRAFT_TABLE_ITEM] < ITEMS_COUNT)
                 DestroyItemIconSprite();
 
             UpdateCraftInfoWindow();
-        }
+        //}
+            */
+
+            ClearCraftInfo(OldPos);
+            UpdateCraftInfoWindow();
 
         return FALSE;
 
@@ -1011,12 +1027,13 @@ static void CraftMenuRemoveBagCallback(void){
     CraftItem = &sCurrentCraftTableItems[sCraftMenuCursorPos][CRAFT_TABLE_ITEM]; 
     
     if (*CraftItem != ITEM_NONE){
-        //DestroyItemIconSprite();
+        DestroyItemIconSprite();
         AddBagItem(*CraftItem, 1);
         *CraftItem = ITEM_NONE;
     }
 
     UpdateCraftTable();
+    UpdateCraftInfoWindow();
     HideOptionsWindow();
 }
 
@@ -1033,6 +1050,7 @@ static u8 CraftMenuReadyCallback(void){
     AddBagItem(FindCraftProduct(CRAFT_PRODUCT), FindCraftProduct(CRAFT_QUANTITY));
     //gSpecialVar_ItemId = FindCraftProduct(CRAFT_PRODUCT);
     ClearCraftTable();
+    ClearCraftInfo(sCraftMenuCursorPos);
     //showcraftmessage Crafting.... Item crafted!
     CraftReturnToTableFromDialogue();
 
@@ -1246,6 +1264,11 @@ static u8 sCraftPackupConfirmCallback(void)
         if (FindCraftProduct(CRAFT_PRODUCT) != ITEM_NONE){
             //expand those placeholders
             CopyItemName(FindCraftProduct(CRAFT_PRODUCT), gStringVar1);
+      //      if (FindCraftProduct(CRAFT_QUANTITY) > 1)
+        //    {
+    //            CopyItemName(FindCraftProduct(CRAFT_QUANTITY), gStringVar2);
+      //          StringExpandPlaceholders(gStringVar2, sText_CraftQuantity);
+        //    }
             StringExpandPlaceholders(gStringVar4, sText_ConfirmReady);
             message = gStringVar4;
             break;
