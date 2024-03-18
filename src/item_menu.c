@@ -210,6 +210,7 @@ static void ConfirmToss(u8);
 static void CancelToss(u8);
 static void ConfirmSell(u8);
 static void CancelSell(u8);
+static bool32 CanCraftItem(u8);
 
 static const struct BgTemplate sBgTemplates_ItemMenu[] =
 {
@@ -352,7 +353,8 @@ static const TaskFunc sContextMenuFuncs[] = { //craft
     [ITEMMENULOCATION_APPRENTICE] =             Task_ItemContext_Normal,
     [ITEMMENULOCATION_WALLY] =                  NULL,
     [ITEMMENULOCATION_PCBOX] =                  Task_ItemContext_GiveToPC,
-    [ITEMMENULOCATION_CHOOSE_ITEM] =            Task_FadeAndCloseBagMenu
+    [ITEMMENULOCATION_CHOOSE_ITEM] =            Task_FadeAndCloseBagMenu,
+    [ITEMMENULOCATION_CRAFT] =                  Task_FadeAndCloseBagMenu
 };
 
 static const struct YesNoFuncTable sYesNoTossFunctions = {ConfirmToss, CancelToss};
@@ -566,7 +568,7 @@ void CB2_BagMenuFromStartMenu(void)
 
 void CB2_BagMenuFromCraftMenu(void)
 {
-    GoToBagMenu(ITEMMENULOCATION_CHOOSE_ITEM, POCKETS_COUNT, CB2_ReturnToField_OpenCraftMenu);
+    GoToBagMenu(ITEMMENULOCATION_CRAFT, POCKETS_COUNT, CB2_ReturnToField_OpenCraftMenu);
 }
 
 void CB2_BagMenuFromBattle(void)
@@ -1267,6 +1269,8 @@ static void Task_BagMenu_HandleInput(u8 taskId)
             break;
         default: // A_BUTTON
             PlaySE(SE_SELECT);
+            if (!CanCraftItem(taskId))
+                break;
             BagDestroyPocketScrollArrowPair();
             BagMenu_PrintCursor(tListTaskId, COLORID_GRAY_CURSOR);
             tListPosition = listPosition;
@@ -1534,6 +1538,20 @@ static void CancelItemSwap(u8 taskId)
     gTasks[taskId].func = Task_BagMenu_HandleInput;
 }
 
+static bool32 CanCraftItem(u8 taskId)
+{
+    if (gBagPosition.location == ITEMMENULOCATION_CRAFT &&
+    (gBagPosition.pocket == KEYITEMS_POCKET || !IsHoldingItemAllowed(gSpecialVar_ItemId) ||
+     gBagPosition.pocket == TMHM_POCKET))
+    {
+        gSpecialVar_ItemId = ITEM_NONE;
+        DisplayItemMessage(taskId, FONT_NORMAL, gText_DadsAdvice, CloseItemMessage);
+        return FALSE;
+    }
+    else
+        return TRUE;
+}
+
 static void OpenContextMenu(u8 taskId) //craft - use for after clicking on item
 {
     switch (gBagPosition.location)
@@ -1592,6 +1610,7 @@ static void OpenContextMenu(u8 taskId) //craft - use for after clicking on item
         }
         break;
     case ITEMMENULOCATION_CHOOSE_ITEM:
+    case ITEMMENULOCATION_CRAFT:
     case ITEMMENULOCATION_PARTY:
     case ITEMMENULOCATION_SHOP:
     case ITEMMENULOCATION_BERRY_TREE:

@@ -35,6 +35,13 @@
 #include "constants/rgb.h"
 #include "constants/songs.h"
 
+// Credits!!
+//--------------
+//TheSylphIsIn: comparing chosen items against an array
+//Lunos: ChooseItem
+//MrGriffin: example-screen
+//Ghoulslash: item icons
+
 // Menu actions
 enum CraftMenuActions {
     MENU_ACTION_SWAP,
@@ -171,12 +178,16 @@ static const u8 sText_ConfirmReady[] = _("This looks like it'll be good.\nCraft 
 static const u8 sText_CraftNo[] = _("Hmm, this won't make anything useful...");
 static const u8 sText_WouldYouLikeToCraft[] = _("There's a crafting table.\nWant to craft something?");
     //each item should get array w craftinprocess messages & requirements (indoors or heat/water/spice/tools/ice)
-static const u8 sText_CraftInProcess[] = _("Setting up... Prepping ingredients... Assembling...");
-static const u8 sText_ItemCrafted[] = _("{STR_VAR_1} crafted!");
-static const u8 sText_PressAtoAddItem[] = _("{COLOR_HIGHLIGHT_SHADOW}{LIGHT_BLUE}{WHITE}{BLUE}{A_BUTTON}   {COLOR DARK_GRAY}{SHADOW LIGHT_GRAY}ADD ITEM");
-static const u8 sText_PressBtoLeave[] = _("{B_BUTTON}   LEAVE");
-static const u8 sText_InBag[] = _("In Bag:");
-static const u8 sText_InBagQty[] = _("x{STR_VAR_1}");
+static const u8 sText_CraftInProcess[] = _("Prepping ingredients... Assembling... Finishing...");
+static const u8 sText_ItemCrafted[] = _("{STR_VAR_2}{STR_VAR_1} crafted!");
+static const u8 sText_AddItem[] = _("{COLOR BLUE}ADD ITEM");
+static const u8 sText_AButton[] = _("{A_BUTTON}");
+static const u8 sText_BButton[] = _("{B_BUTTON}");
+static const u8 sText_InBag[] = _("IN BAG:");
+static const u8 sText_Var2Var1[] = _("{STR_VAR_2}{STR_VAR_1}");
+extern const u8 gText_DiplomaEmpty[];
+
+
 
 enum CraftWindows {
     WINDOW_CRAFT_MSG,
@@ -462,9 +473,17 @@ static void UpdateCraftInfoWindow(void){
         //In bag
         AddTextPrinterParameterized(sCraftInfoWindowId, FONT_SMALL, sText_InBag, 25, 1, TEXT_SKIP_DRAW, NULL);
         ConvertIntToDecimalStringN(gStringVar1, quantityInBag, STR_CONV_MODE_LEFT_ALIGN, MAX_ITEM_DIGITS + 1);
-        StringExpandPlaceholders(gStringVar4, sText_InBagQty);
+        
+        if (quantityInBag == 0)
+            StringCopy(gStringVar2, gText_DiplomaEmpty);
+        else
+            StringCopy(gStringVar2, gText_ColorDarkGray);
+
+        StringExpandPlaceholders(gStringVar4, sText_Var2Var1);
+        StringCopy(gStringVar1, gStringVar4);
+        StringExpandPlaceholders(gStringVar4, gText_xVar1);
         //AddTextPrinterParameterized3(sCraftInfoWindowId, FONT_NARROW, x, 1, , -1, gStringVar4);
-        AddTextPrinterParameterized(sCraftInfoWindowId, FONT_NARROW, gStringVar4, 32, 16, TEXT_SKIP_DRAW, NULL);
+        AddTextPrinterParameterized(sCraftInfoWindowId, FONT_NARROW, gStringVar4, 25, 15, TEXT_SKIP_DRAW, NULL);
         
         //START = Ready
         //BlitBitmapToWindow(sCraftInfoWindowId, sStartButton_Gfx, 25, 8, 24, 16);
@@ -476,21 +495,48 @@ static void UpdateCraftInfoWindow(void){
            (B) Pack up   STR-> Ready
 
         //Add & Pack Up
-        //StringExpandPlaceholders(gStringVar4, sText_PressAtoAddItem);
-        AddTextPrinterParameterized(sCraftInfoWindowId, FONT_SMALL, sText_PressAtoAddItem, 8, 1, TEXT_SKIP_DRAW, NULL);
+        StringCopy(gStringVar1, sText_AddItem);
+        StringCopy(gStringVar2, gText_ColorBlue);
+        StringExpandPlaceholders(gStringVar4, sText_Var2Var1);
+        AddTextPrinterParameterized(sCraftInfoWindowId, FONT_SMALL, gStringVar4, 25, 1, TEXT_SKIP_DRAW, NULL);
+
+        //LoadPalette(gPlttBufferUnfaded + BG_PLTT_ID(15) + TEXT_COLOR_BLUE, BG_PLTT_ID(15) + 1, PLTT_SIZEOF(1));
+        //LoadPalette(gPlttBufferUnfaded + BG_PLTT_ID(15) + TEXT_COLOR_LIGHT_BLUE, BG_PLTT_ID(15) + 2, PLTT_SIZEOF(1));
+        DrawKeypadIcon(sCraftInfoWindowId, CHAR_A_BUTTON, 8, 1);
 
         //START = Ready
         if (!IsCraftTableEmpty())
         {
-            palette = RGB_BLACK;
-            LoadPalette(&palette, BG_PLTT_ID(15) + 10, PLTT_SIZEOF(1));
+            if (FindCraftProduct(0))
+            {
+                //Show hint that it's a good recipe
+                palette = RGB_BLACK;
+                LoadPalette(&palette, BG_PLTT_ID(15) + 10, PLTT_SIZEOF(1));
 
-            BlitBitmapToWindow(sCraftInfoWindowId, sStartButton_Gfx, 0, 16, 24, 16);
-            AddTextPrinterParameterized(sCraftInfoWindowId, FONT_SMALL, sText_Ready, 25, 16, TEXT_SKIP_DRAW, NULL);
+                BlitBitmapToWindow(sCraftInfoWindowId, sStartButton_Gfx, 0, 16, 24, 16);
+            }
+            else
+            {
+                DrawKeypadIcon(sCraftInfoWindowId, CHAR_START_BUTTON, 0, 16);
+            }
+
+            StringCopy(gStringVar1, sText_Ready);
+            StringCopy(gStringVar2, gText_ColorBlue);
+            StringExpandPlaceholders(gStringVar4, sText_Var2Var1);
+            AddTextPrinterParameterized(sCraftInfoWindowId, FONT_SMALL, gStringVar4, 25, 16, TEXT_SKIP_DRAW, NULL);
 
         }
         else
-            AddTextPrinterParameterized(sCraftInfoWindowId, FONT_SMALL, sText_PressBtoLeave, 8, 16, TEXT_SKIP_DRAW, NULL);
+        {
+            //LoadPalette(gPlttBufferUnfaded + BG_PLTT_ID(15) + TEXT_COLOR_BLUE, BG_PLTT_ID(15) + 1, PLTT_SIZEOF(1));
+            //LoadPalette(gPlttBufferUnfaded + BG_PLTT_ID(15) + TEXT_COLOR_LIGHT_BLUE, BG_PLTT_ID(15) + 2, PLTT_SIZEOF(1));
+            DrawKeypadIcon(sCraftInfoWindowId, CHAR_B_BUTTON, 8, 16);
+
+            StringCopy(gStringVar1, gText_Cancel);
+            StringCopy(gStringVar2, gText_ColorBlue);
+            StringExpandPlaceholders(gStringVar4, sText_Var2Var1);
+            AddTextPrinterParameterized(sCraftInfoWindowId, FONT_SMALL, gStringVar4, 25, 16, TEXT_SKIP_DRAW, NULL);
+        }
     }
 
     //Draw! (Insert cowboy emoji)
@@ -1046,7 +1092,7 @@ static u8 CraftMenuReadyCallback(void){
 
     return FALSE;
     */
-
+    AddBagItem(ITEM_TM24_THUNDERBOLT, 66);
     AddBagItem(FindCraftProduct(CRAFT_PRODUCT), FindCraftProduct(CRAFT_QUANTITY));
     //gSpecialVar_ItemId = FindCraftProduct(CRAFT_PRODUCT);
     ClearCraftTable();
