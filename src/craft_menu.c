@@ -95,11 +95,12 @@ EWRAM_DATA static u8 CraftMessage = 0;
 
 static const u8 sStartButton_Gfx[] = INCBIN_U8("graphics/bag/start_button.4bpp");
 
-// Menu action callbacks - SWAP/BAG/READY/CANCEL
+// Menu action callbacks - SWAP/PUTAWAY/READY/CANCEL
 static bool8 CraftMenuItemOptionsCallback(void);
-static u8 CraftMenuPackUpCallback(void);
+static void CraftMenuPackUpCallback(void);
 static bool8 CraftMenuAddSwapCallback(void);
 static bool8 CraftMenuDoOptionsSwapCallback(void);
+static bool8 CraftMenuDoOptionsReadyCallback(void);
 static void CraftMenuRemoveBagCallback(void);
 static u8 CraftMenuReadyCallback(void);
 static bool8 CraftMenuCancelCallback(void);
@@ -174,11 +175,12 @@ static const u8 sTextColorTable[][3] =
 
 //User Interaction
 static const u8 sText_ConfirmPackUp[] = _("Would you like to pack up?");
-static const u8 sText_ConfirmReady[] = _("This looks like it'll be good.\nCraft {STR_VAR_1}?");
+static const u8 sText_ConfirmReady[] = _("This looks like it'll be good.\nCraft {STR_VAR_1}{STR_VAR_2}?");
+static const u8 sText_ConfirmReadyQty[] = _(" ({COLOR GREEN}{SHADOW LIGHT_GREEN}{STR_VAR_1}{COLOR DARK_GRAY}{SHADOW LIGHT_GRAY})");
 static const u8 sText_CraftNo[] = _("Hmm, this won't make anything useful...");
 static const u8 sText_WouldYouLikeToCraft[] = _("There's a crafting table.\nWant to craft something?");
     //each item should get array w craftinprocess messages & requirements (indoors or heat/water/spice/tools/ice)
-static const u8 sText_CraftInProcess[] = _("Prepping ingredients... Assembling... Finishing...");
+static const u8 sText_CraftInProcess[] = _("Prepping ingredients... Assembling... Finishing...{PAUSE_UNTIL_PRESS}");
 static const u8 sText_ItemCrafted[] = _("{STR_VAR_2}{STR_VAR_1} crafted!");
 static const u8 sText_AddItem[] = _("{COLOR BLUE}ADD ITEM");
 static const u8 sText_AButton[] = _("{A_BUTTON}");
@@ -267,9 +269,13 @@ static void ClearCraftTable(void);
 static void Task_CreateCraftMenu(TaskFunc followupFunc);
 
 static const u16 Craft_Recipes[][6] = {
-//  {ITEM_1,        ITEM_2,         ITEM_3,         ITEM_4,               ITEM_PRODUCT,  QUANTITY},    
-    {0,             0,              ITEM_POTION,    ITEM_PECHA_BERRY,     ITEM_ANTIDOTE, 3},
-    {0,             0,              ITEM_POKE_BALL, ITEM_ESCAPE_ROPE,     ITEM_SMOKE_BALL, 1},
+// Ingredients (ITEM_1234) must be arranged with Smallest -> Largest ItemId
+//  {ITEM_1,        ITEM_2,            ITEM_3,            ITEM_4,            ITEM_PRODUCT,   QUANTITY},    
+    {0,             0,                 ITEM_POTION,       ITEM_PECHA_BERRY,  ITEM_ANTIDOTE,         3},
+    {0,             ITEM_REPEL,        ITEM_REPEL,        ITEM_REPEL,        ITEM_SUPER_REPEL,      2},
+    {0,             ITEM_SUPER_REPEL,  ITEM_SUPER_REPEL,  ITEM_SUPER_REPEL,  ITEM_MAX_REPEL,        2},
+    {0,             0,                 ITEM_POKE_BALL,    ITEM_MAX_REPEL,    ITEM_SMOKE_BALL,       1},
+    {0,             0,                 ITEM_ORAN_BERRY,   ITEM_ORAN_BERRY,   ITEM_BERRY_JUICE,      1}
 };
 
 //Menu / Window Functions
@@ -447,7 +453,6 @@ static void UpdateCraftInfoWindow(void){
     bool32 handleFlash;
     u32 quantityInBag;
 
-
     //Init Vars
     itemId = sCurrentCraftTableItems[sCraftMenuCursorPos][CRAFT_TABLE_ITEM];
     handleFlash = FALSE;
@@ -458,8 +463,6 @@ static void UpdateCraftInfoWindow(void){
         handleFlash = TRUE;
 
     //Clean window
-    //if (itemId)
-    //    DestroyItemIconSprite(); //only call this if moving off a spot that has an item
     FillWindowPixelBuffer(sCraftInfoWindowId, PIXEL_FILL(TEXT_COLOR_WHITE));
 
     //Display Info
@@ -470,43 +473,45 @@ static void UpdateCraftInfoWindow(void){
         //icon
         ShowItemIconSprite(itemId, handleFlash, 184, 140); //176 = tilemapleft + 16 border pixels, 140 from GhoulSlash
 
-        //In bag
+        //IN BAG:
         AddTextPrinterParameterized(sCraftInfoWindowId, FONT_SMALL, sText_InBag, 25, 1, TEXT_SKIP_DRAW, NULL);
         ConvertIntToDecimalStringN(gStringVar1, quantityInBag, STR_CONV_MODE_LEFT_ALIGN, MAX_ITEM_DIGITS + 1);
         
+        //Color for remaining qty
         if (quantityInBag == 0)
-            StringCopy(gStringVar2, gText_DiplomaEmpty);
+            StringCopy(gStringVar2, gText_DiplomaEmpty); //red
         else
-            StringCopy(gStringVar2, gText_ColorDarkGray);
+            StringCopy(gStringVar2, gText_ColorDarkGray); //normal
 
+        //xQty
         StringExpandPlaceholders(gStringVar4, sText_Var2Var1);
         StringCopy(gStringVar1, gStringVar4);
         StringExpandPlaceholders(gStringVar4, gText_xVar1);
-        //AddTextPrinterParameterized3(sCraftInfoWindowId, FONT_NARROW, x, 1, , -1, gStringVar4);
         AddTextPrinterParameterized(sCraftInfoWindowId, FONT_NARROW, gStringVar4, 25, 15, TEXT_SKIP_DRAW, NULL);
         
-        //START = Ready
-        //BlitBitmapToWindow(sCraftInfoWindowId, sStartButton_Gfx, 25, 8, 24, 16);
-        //AddTextPrinterParameterized(sCraftInfoWindowId, FONT_NORMAL, sText_Ready, 32, 16, TEXT_SKIP_DRAW, NULL);
-
     }
-    else {
-        // (A) Add Item  SEL-> Recipes   \
-           (B) Pack up   STR-> Ready
+    else //No Item
+    {
+        // (A) Add Item      flag-> SEL-> Recipes   \
+           (B) Cancel               STR-> Ready
 
-        //Add & Pack Up
+        //------------------------
+        //This and (A) button below will replace with SEL= Recipe Book, once the book is implemented that is
+        //Add Item 
         StringCopy(gStringVar1, sText_AddItem);
         StringCopy(gStringVar2, gText_ColorBlue);
         StringExpandPlaceholders(gStringVar4, sText_Var2Var1);
         AddTextPrinterParameterized(sCraftInfoWindowId, FONT_SMALL, gStringVar4, 25, 1, TEXT_SKIP_DRAW, NULL);
 
-        //LoadPalette(gPlttBufferUnfaded + BG_PLTT_ID(15) + TEXT_COLOR_BLUE, BG_PLTT_ID(15) + 1, PLTT_SIZEOF(1));
-        //LoadPalette(gPlttBufferUnfaded + BG_PLTT_ID(15) + TEXT_COLOR_LIGHT_BLUE, BG_PLTT_ID(15) + 2, PLTT_SIZEOF(1));
+        //(A) button
         DrawKeypadIcon(sCraftInfoWindowId, CHAR_A_BUTTON, 8, 1);
+        //------------------------
+
 
         //START = Ready
         if (!IsCraftTableEmpty())
         {
+            // (START)
             if (FindCraftProduct(0))
             {
                 //Show hint that it's a good recipe
@@ -520,6 +525,7 @@ static void UpdateCraftInfoWindow(void){
                 DrawKeypadIcon(sCraftInfoWindowId, CHAR_START_BUTTON, 0, 16);
             }
 
+            // READY
             StringCopy(gStringVar1, sText_Ready);
             StringCopy(gStringVar2, gText_ColorBlue);
             StringExpandPlaceholders(gStringVar4, sText_Var2Var1);
@@ -528,10 +534,10 @@ static void UpdateCraftInfoWindow(void){
         }
         else
         {
-            //LoadPalette(gPlttBufferUnfaded + BG_PLTT_ID(15) + TEXT_COLOR_BLUE, BG_PLTT_ID(15) + 1, PLTT_SIZEOF(1));
-            //LoadPalette(gPlttBufferUnfaded + BG_PLTT_ID(15) + TEXT_COLOR_LIGHT_BLUE, BG_PLTT_ID(15) + 2, PLTT_SIZEOF(1));
+            // (B)
             DrawKeypadIcon(sCraftInfoWindowId, CHAR_B_BUTTON, 8, 16);
 
+            // Cancel (in blue1)
             StringCopy(gStringVar1, gText_Cancel);
             StringCopy(gStringVar2, gText_ColorBlue);
             StringExpandPlaceholders(gStringVar4, sText_Var2Var1);
@@ -541,7 +547,7 @@ static void UpdateCraftInfoWindow(void){
 
     //Draw! (Insert cowboy emoji)
     PutWindowTilemap(sCraftInfoWindowId);
-    CopyWindowToVram(sCraftInfoWindowId, 2);
+    CopyWindowToVram(sCraftInfoWindowId, COPYWIN_GFX);
     ScheduleBgCopyTilemapToVram(0);
 }
 
@@ -634,11 +640,17 @@ void ShowCraftMenu(void){
 #define sCraftDelay data[2]
 
 static bool8 CraftDelay(void){
-    if (--sPauseCounter < 1){
-        gMenuCallback == CraftMenuPackUpCallback;
-    }
 
-    return FALSE;
+    sPauseCounter--;
+
+    if (JOY_HELD(A_BUTTON)){
+        PlaySE(SE_SELECT);
+        return TRUE;
+    }
+    if (sPauseCounter == 0)
+        return TRUE;
+    else
+        return FALSE;
 }
 
 static void Task_AddCraftDelay(u8 taskId)
@@ -851,7 +863,7 @@ static bool8 HandleCraftMenuInput(void)
                 break;
             case MENU_ACTION_READY:
                 PlaySE(SE_SELECT);
-                CraftMenuReadyCallback();
+                CraftMenuDoOptionsReadyCallback();
                 break;
             case MENU_ACTION_CANCEL:
             default:
@@ -920,13 +932,21 @@ static bool8 CraftPackUpFinish(void){
     return CRAFT_MESSAGE_CONFIRM;
 }
 
-static u8 CraftMenuPackUpCallback(void){
+static u8 CraftPackUpCheckDelay(void){
+
+    if (!IsSEPlaying() && CraftDelay())
+        CraftMenuPackUpCallback();
+
+    return CRAFT_MESSAGE_IN_PROGRESS;
+}
+
+static void CraftMenuPackUpCallback(void){
     
     s8 i;
     u8 taskId;
-    u16 *CraftItem;
+    u16 CraftItem;
 
-    CraftItem = &sCurrentCraftTableItems[sCraftMenuCursorPos][CRAFT_TABLE_ITEM]; 
+    CraftItem = sCurrentCraftTableItems[sCraftMenuCursorPos][CRAFT_TABLE_ITEM]; 
 
     //This times out the removal ok but freezes on the last item / empty items
     //Backing out of menu is slow if item in pos = 0 ',:/
@@ -982,7 +1002,7 @@ static u8 CraftMenuPackUpCallback(void){
     switch (sCraftMenuCursorPos)
     {
     case 0:
-        if (*CraftItem == ITEM_NONE){
+        if (CraftItem == ITEM_NONE){
 
             sCraftDialogCallback = CraftPackUpFinish;
             break;
@@ -991,16 +1011,22 @@ static u8 CraftMenuPackUpCallback(void){
         }
 
     default:
-        if (*CraftItem != ITEM_NONE){
+        if (CraftItem != ITEM_NONE){
             PlaySE(SE_BALL);
             CraftMenuRemoveBagCallback();
-            sPauseCounter = 25;  //check out Task_AnimateAfterDelay
+            break;
+            //sPauseCounter = 25;  //check out Task_AnimateAfterDelay
         }
-        sCraftMenuCursorPos != 0 ? --sCraftMenuCursorPos : 0;
+        else
+            sCraftMenuCursorPos--;
+        //if (sCurrentCraftTableItems[--sCraftMenuCursorPos][CRAFT_TABLE_ITEM] == ITEM_NONE) 
+        //    sCraftMenuCursorPos != 0 ? sCraftMenuCursorPos-- : 0;
+        //else
+            sPauseCounter = sCurrentCraftTableItems[sCraftMenuCursorPos][CRAFT_TABLE_ITEM] == ITEM_NONE ? 0 : 25;
         break;
     }
 
-    return CRAFT_MESSAGE_IN_PROGRESS;
+    //return CRAFT_MESSAGE_IN_PROGRESS;
     //return FALSE;
     
 //if statements attempt 1    
@@ -1066,6 +1092,18 @@ static bool8 CraftMenuDoOptionsSwapCallback(void){
     return FALSE;
 }
 
+static bool8 CraftMenuDoOptionsReadyCallback(void){
+
+    HideOptionsWindow;
+    ClearCraftInfo(sCraftMenuCursorPos);
+
+    CraftMessage = CRAFT_READY_CONFIRM;
+
+    gMenuCallback = CraftStartConfirmCallback;
+
+    return FALSE;
+}
+
 static void CraftMenuRemoveBagCallback(void){
      
     u16 *CraftItem;
@@ -1087,16 +1125,18 @@ static void CraftMenuRemoveBagCallback(void){
 #define CRAFT_QUANTITY 1
 
 static u8 CraftMenuReadyCallback(void){
-    /*HideOptionsWindow();
-    gMenuCallback = HandleCraftMenuInput;
 
-    return FALSE;
-    */
-    AddBagItem(ITEM_TM24_THUNDERBOLT, 66);
-    AddBagItem(FindCraftProduct(CRAFT_PRODUCT), FindCraftProduct(CRAFT_QUANTITY));
-    //gSpecialVar_ItemId = FindCraftProduct(CRAFT_PRODUCT);
+    u16 CraftProduct, CraftQty;
+
+    CraftProduct = FindCraftProduct(CRAFT_PRODUCT);
+    CraftQty = FindCraftProduct(CRAFT_QUANTITY);
+
+    AddBagItem(CraftProduct, CraftQty);
+    //AddSwap if more CraftQty
+
     ClearCraftTable();
     ClearCraftInfo(sCraftMenuCursorPos);
+
     //showcraftmessage Crafting.... Item crafted!
     CraftReturnToTableFromDialogue();
 
@@ -1228,7 +1268,8 @@ static u8 CraftPackUpConfirmInputCallback(void)
         case CRAFT_PACKUP_CONFIRM:
             sCraftMenuCursorPos = 3;
             sPauseCounter = 30;
-            sCraftDialogCallback = CraftMenuPackUpCallback;
+            //sCraftDialogCallback = CraftMenuPackUpCallback;
+            sCraftDialogCallback = CraftPackUpCheckDelay;
             break;
         case CRAFT_READY_CONFIRM:
             sCraftDialogCallback = CraftMenuReadyCallback;
@@ -1296,7 +1337,11 @@ static u8 sCraftPackupConfirmCallback(void)
     //ShowSaveInfoWindow(); //craft copywin_gfx
 
     const u8 *message;
-    
+    u16 CraftProduct, CraftQty;
+
+    CraftProduct = FindCraftProduct(CRAFT_PRODUCT);
+    CraftQty = FindCraftProduct(CRAFT_QUANTITY);
+
     HideCraftMenu();
     FreezeObjectEvents();
     LockPlayerFieldControls();
@@ -1307,14 +1352,17 @@ static u8 sCraftPackupConfirmCallback(void)
         message = sText_ConfirmPackUp;
         break;
     case CRAFT_READY_CONFIRM:
-        if (FindCraftProduct(CRAFT_PRODUCT) != ITEM_NONE){
+        if (CraftProduct != ITEM_NONE){
             //expand those placeholders
-            CopyItemName(FindCraftProduct(CRAFT_PRODUCT), gStringVar1);
-      //      if (FindCraftProduct(CRAFT_QUANTITY) > 1)
-        //    {
-    //            CopyItemName(FindCraftProduct(CRAFT_QUANTITY), gStringVar2);
-      //          StringExpandPlaceholders(gStringVar2, sText_CraftQuantity);
-        //    }
+            if (CraftQty > 1)
+            {
+                ConvertIntToDecimalStringN(gStringVar1, CraftQty, STR_CONV_MODE_LEFT_ALIGN, 2);
+                StringExpandPlaceholders(gStringVar2, sText_ConfirmReadyQty);
+            }
+            else
+                StringCopy(gStringVar2, gText_EmptyString2);
+
+            CopyItemName(CraftProduct, gStringVar1);
             StringExpandPlaceholders(gStringVar4, sText_ConfirmReady);
             message = gStringVar4;
             break;
