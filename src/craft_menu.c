@@ -97,7 +97,7 @@ static const u8 sStartButton_Gfx[] = INCBIN_U8("graphics/bag/start_button.4bpp")
 
 // Menu action callbacks - SWAP/PUTAWAY/READY/CANCEL
 static bool8 CraftMenuItemOptionsCallback(void);
-static void CraftMenuPackUpCallback(void);
+static u8 CraftMenuPackUpCallback(void);
 static bool8 CraftMenuAddSwapCallback(void);
 static bool8 CraftMenuDoOptionsSwapCallback(void);
 static bool8 CraftMenuDoOptionsReadyCallback(void);
@@ -647,10 +647,10 @@ static bool8 CraftDelay(void){
         PlaySE(SE_SELECT);
         return TRUE;
     }
-    if (sPauseCounter == 0)
+    if (sPauseCounter == 0 || --sPauseCounter == 0)
         return TRUE;
-    else
-        return FALSE;
+    
+    return FALSE;
 }
 
 static void Task_AddCraftDelay(u8 taskId)
@@ -863,8 +863,8 @@ static bool8 HandleCraftMenuInput(void)
                 break;
             case MENU_ACTION_READY:
                 PlaySE(SE_SELECT);
+                ClearCraftInfo(sCraftMenuCursorPos);
                 CraftMenuDoOptionsReadyCallback();
-                break;
             case MENU_ACTION_CANCEL:
             default:
                 CraftMenuCancelCallback();
@@ -927,26 +927,37 @@ enum CraftMessageState {
 };
 
 static bool8 CraftPackUpFinish(void){
+
     PlaySE(SE_RG_BAG_POCKET);
     HideCraftMenu();
+
     return CRAFT_MESSAGE_CONFIRM;
 }
 
 static u8 CraftPackUpCheckDelay(void){
 
-    if (!IsSEPlaying() && CraftDelay())
-        CraftMenuPackUpCallback();
+    //if (CraftDelay())
+    //if(CraftMenuPackUpCallback == TRUE)
+        sCraftDialogCallback = CraftPackUpFinish;
 
     return CRAFT_MESSAGE_IN_PROGRESS;
 }
 
-static void CraftMenuPackUpCallback(void){
+static u8 CraftMenuPackUpCallback(void){
     
     s8 i;
     u8 taskId;
-    u16 CraftItem;
+    //u16 CraftItem;
+    u16 *CraftItem;
 
-    CraftItem = sCurrentCraftTableItems[sCraftMenuCursorPos][CRAFT_TABLE_ITEM]; 
+    //CraftItem = sCurrentCraftTableItems[sCraftMenuCursorPos][CRAFT_TABLE_ITEM]; 
+    CraftItem = &sCurrentCraftTableItems[sCraftMenuCursorPos][CRAFT_TABLE_ITEM]; 
+
+    /*
+    sPauseCounter--;
+    if (sPauseCounter > 0)
+        return FALSE;
+    */
 
     //This times out the removal ok but freezes on the last item / empty items
     //Backing out of menu is slow if item in pos = 0 ',:/
@@ -954,6 +965,11 @@ static void CraftMenuPackUpCallback(void){
     //if (sPauseCounter-- > 0)
     //    return CRAFT_MESSAGE_IN_PROGRESS;
     
+
+
+
+
+
 
 //switch statement attempt 2    
 /*/    switch (CraftPackUpCheckItem())
@@ -1002,31 +1018,33 @@ static void CraftMenuPackUpCallback(void){
     switch (sCraftMenuCursorPos)
     {
     case 0:
-        if (CraftItem == ITEM_NONE){
+        if (*CraftItem == ITEM_NONE){
 
             sCraftDialogCallback = CraftPackUpFinish;
             break;
+            //return TRUE;
             //return CraftPackUpFinish();
             //gMenuCallback = CraftPackUpFinish;
         }
 
     default:
-        if (CraftItem != ITEM_NONE){
+        if (*CraftItem != ITEM_NONE){
             PlaySE(SE_BALL);
             CraftMenuRemoveBagCallback();
-            break;
-            //sPauseCounter = 25;  //check out Task_AnimateAfterDelay
+            //return FALSE;
+            //break;
+            sPauseCounter = 25;  //check out Task_AnimateAfterDelay
         }
-        else
-            sCraftMenuCursorPos--;
         //if (sCurrentCraftTableItems[--sCraftMenuCursorPos][CRAFT_TABLE_ITEM] == ITEM_NONE) 
-        //    sCraftMenuCursorPos != 0 ? sCraftMenuCursorPos-- : 0;
+            sCraftMenuCursorPos != 0 ? --sCraftMenuCursorPos : 0;
         //else
-            sPauseCounter = sCurrentCraftTableItems[sCraftMenuCursorPos][CRAFT_TABLE_ITEM] == ITEM_NONE ? 0 : 25;
         break;
     }
 
-    //return CRAFT_MESSAGE_IN_PROGRESS;
+    //sPauseCounter = (sCurrentCraftTableItems[sCraftMenuCursorPos - 1][CRAFT_TABLE_ITEM] == ITEM_NONE) ? 0 : 25000;
+    //sCraftMenuCursorPos--;
+
+    return CRAFT_MESSAGE_IN_PROGRESS;
     //return FALSE;
     
 //if statements attempt 1    
@@ -1054,6 +1072,8 @@ static void CraftMenuPackUpCallback(void){
     sCraftMenuCursorPos--;
     */
 }
+
+
 
 static void HideOptionsWindow(void)
 {
@@ -1094,8 +1114,6 @@ static bool8 CraftMenuDoOptionsSwapCallback(void){
 
 static bool8 CraftMenuDoOptionsReadyCallback(void){
 
-    HideOptionsWindow;
-    ClearCraftInfo(sCraftMenuCursorPos);
 
     CraftMessage = CRAFT_READY_CONFIRM;
 
@@ -1268,8 +1286,8 @@ static u8 CraftPackUpConfirmInputCallback(void)
         case CRAFT_PACKUP_CONFIRM:
             sCraftMenuCursorPos = 3;
             sPauseCounter = 30;
-            //sCraftDialogCallback = CraftMenuPackUpCallback;
-            sCraftDialogCallback = CraftPackUpCheckDelay;
+            sCraftDialogCallback = CraftMenuPackUpCallback;
+            //sCraftDialogCallback = CraftPackUpCheckDelay;
             break;
         case CRAFT_READY_CONFIRM:
             sCraftDialogCallback = CraftMenuReadyCallback;
