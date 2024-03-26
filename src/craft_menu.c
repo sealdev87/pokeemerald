@@ -85,9 +85,9 @@ EWRAM_DATA static u8 sCraftInfoWindowId = 0;
 EWRAM_DATA static u8 sCraftOptionsWindowId = 0;
 EWRAM_DATA static u8 sCraftSousChefsWindowId = 0;
 
+EWRAM_DATA u16 sCurrentCraftTableItems[4][2] = {0}; //craft table items, actions
 EWRAM_DATA static u8 sCraftMenuCursorPos = 0;
 EWRAM_DATA static u8 sInitCraftMenuData[1] = {0};
-EWRAM_DATA static u16 sCurrentCraftTableItems[4][2] = {0}; //craft table items, actions
 EWRAM_DATA static u8 sCraftState = 0;
 EWRAM_DATA static u32 sPauseCounter = 0;
 EWRAM_DATA static u8 (*sCraftDialogCallback)(void) = NULL;
@@ -127,6 +127,7 @@ static u8 sCraftPackupConfirmCallback(void);
 static u8 WriteCraftMessageCallback(void);
 static bool8 CraftStartConfirmCallback(void);
 static bool8 CraftConfirmCallback(void);
+static u8 CraftDialoguePackUp(void);
 
 // Menu callbacks
 static bool8 HandleCraftMenuInput(void);
@@ -180,14 +181,15 @@ static const u8 sText_ConfirmReadyQty[] = _(" ({COLOR GREEN}{SHADOW LIGHT_GREEN}
 static const u8 sText_CraftNo[] = _("Hmm, this won't make anything useful...");
 static const u8 sText_WouldYouLikeToCraft[] = _("There's a crafting table.\nWant to craft something?");
     //each item should get array w craftinprocess messages & requirements (indoors or heat/water/spice/tools/ice)
-static const u8 sText_CraftInProcess[] = _("Prepping ingredients... Assembling... Finishing...{PAUSE_UNTIL_PRESS}");
+static const u8 sText_CraftInProcess[] = _("Prepping ingredients... {PAUSE 15}Assembling... {PAUSE 15}Finishing...{PAUSE_UNTIL_PRESS}");
 static const u8 sText_ItemCrafted[] = _("{STR_VAR_2}{STR_VAR_1} crafted!");
 static const u8 sText_AddItem[] = _("{COLOR BLUE}ADD ITEM");
 static const u8 sText_AButton[] = _("{A_BUTTON}");
 static const u8 sText_BButton[] = _("{B_BUTTON}");
 static const u8 sText_InBag[] = _("IN BAG:");
 static const u8 sText_Var2Var1[] = _("{STR_VAR_2}{STR_VAR_1}");
-extern const u8 gText_DiplomaEmpty[];
+extern const u8 gText_DiplomaEmpty[]; //red, lol
+static const u8 sText_PackingUp[] = _("Packing up{PAUSE 15}.{PAUSE 15}.{PAUSE 15}.{PAUSE 15}\p{PLAYER} put the items back in the bag.{PAUSE_UNTIL_PRESS}");
 
 
 
@@ -926,12 +928,15 @@ enum CraftMessageState {
     CRAFT_MESSAGE_CANCEL
 };
 
-static bool8 CraftPackUpFinish(void){
+static u8 CraftPackUpFinish(void){
 
-    PlaySE(SE_RG_BAG_POCKET);
-    HideCraftMenu();
+    //PlaySE(SE_RG_BAG_POCKET);
+    //HideCraftMenu();
 
-    return CRAFT_MESSAGE_CONFIRM;
+    //Until the delay/animated pack up works...
+    ShowCraftMessage(sText_PackingUp, CraftDialoguePackUp);
+
+    return CRAFT_MESSAGE_IN_PROGRESS;
 }
 
 static u8 CraftPackUpCheckDelay(void){
@@ -1279,7 +1284,7 @@ static u8 CraftPackUpConfirmInputCallback(void)
     {
     case 0: // Yes
         //ClearDialogWindowAndFrame(0, TRUE);
-        CraftReturnToTableFromDialogue();
+        //CraftReturnToTableFromDialogue();
 
         switch (CraftMessage)
         {
@@ -1449,5 +1454,17 @@ static bool8 CraftConfirmCallback(void){
     }
 
     return FALSE;
+}
+
+static u8 CraftDialoguePackUp(void){
+
+    //if (JOY_NEW(A_BUTTON) || JOY_NEW(B_BUTTON)){
+        ClearDialogWindowAndFrame(0, TRUE);
+        PlaySE(SE_WIN_OPEN);
+        HideCraftMenu();
+        return CRAFT_MESSAGE_CONFIRM;
+    //}
+
+    //return CRAFT_MESSAGE_IN_PROGRESS;
 }
 

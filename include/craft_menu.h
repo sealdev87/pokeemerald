@@ -2,6 +2,7 @@
 #define GUARD_CRAFT_MENU_H
 
 extern bool8 (*gMenuCallback)(void);
+extern EWRAM_DATA u16 sCurrentCraftTableItems[4][2];
 
 void ShowReturnToFieldCraftMenu(void);
 void Task_ShowCraftMenu(u8 taskId);

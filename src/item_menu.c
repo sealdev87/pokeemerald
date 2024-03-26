@@ -48,6 +48,7 @@
 #include "window.h"
 #include "apprentice.h"
 #include "battle_pike.h"
+#include "craft_menu.h"
 #include "constants/items.h"
 #include "constants/rgb.h"
 #include "constants/songs.h"
@@ -109,7 +110,7 @@ struct ListBuffer1 {
 };
 
 struct ListBuffer2 {
-    s8 name[MAX_POCKET_ITEMS][ITEM_NAME_LENGTH + 10];
+    s8 name[MAX_POCKET_ITEMS][ITEM_NAME_LENGTH + 15];
 };
 
 struct TempWallyBag {
@@ -210,6 +211,7 @@ static void ConfirmToss(u8);
 static void CancelToss(u8);
 static void ConfirmSell(u8);
 static void CancelSell(u8);
+static bool32 TryAddCraftItem(void);
 static bool32 CanCraftItem(u8);
 
 static const struct BgTemplate sBgTemplates_ItemMenu[] =
@@ -383,6 +385,7 @@ enum {
     COLORID_GRAY_CURSOR,
     COLORID_UNUSED,
     COLORID_TMHM_INFO,
+    COLORID_CRAFT,
     COLORID_NONE = 0xFF
 };
 static const u8 sFontColorTable[][3] = {
@@ -391,7 +394,8 @@ static const u8 sFontColorTable[][3] = {
     [COLORID_POCKET_NAME] = {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE,      TEXT_COLOR_RED},
     [COLORID_GRAY_CURSOR] = {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_LIGHT_GRAY, TEXT_COLOR_GREEN},
     [COLORID_UNUSED]      = {TEXT_COLOR_DARK_GRAY,   TEXT_COLOR_WHITE,      TEXT_COLOR_LIGHT_GRAY},
-    [COLORID_TMHM_INFO]   = {TEXT_COLOR_TRANSPARENT, TEXT_DYNAMIC_COLOR_5,  TEXT_DYNAMIC_COLOR_1}
+    [COLORID_TMHM_INFO]   = {TEXT_COLOR_TRANSPARENT, TEXT_DYNAMIC_COLOR_5,  TEXT_DYNAMIC_COLOR_1},
+    [COLORID_CRAFT]       = {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_GREEN + 5,  TEXT_COLOR_LIGHT_GREEN +5} //No green on Palette 1, so purple it is
 };
 
 static const struct WindowTemplate sDefaultBagWindows[] =
@@ -867,11 +871,20 @@ static void AllocateBagItemListBuffers(void)
     sListBuffer2 = Alloc(sizeof(*sListBuffer2));
 }
 
+static void ColorMenuItemString(u8 *str, u8 colorIndex)
+{
+    StringCopy(str, gText_Color161Shadow161);
+    
+    str[2] = sFontColorTable[colorIndex][1];
+    str[5] = sFontColorTable[colorIndex][2];
+}
+
 static void LoadBagItemListBuffers(u8 pocketId)
 {
     u16 i;
     struct BagPocket *pocket = &gBagPockets[pocketId];
     struct ListMenuItem *subBuffer;
+    u8 *str;
 
     if (!gBagMenu->hideCloseBagText)
     {
@@ -903,8 +916,25 @@ static void LoadBagItemListBuffers(u8 pocketId)
     gMultiuseListMenuTemplate.maxShowed = gBagMenu->numShownItems[pocketId];
 }
 
+static bool32 IsOnCraftTable(u16 itemId){
+
+    u32 i;
+
+    for (i = 0; i < 4; i++)
+    {
+        if (sCurrentCraftTableItems[i][0] == itemId)
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+extern const u8 gText_4Spaces[];
+
 static void GetItemName(s8 *dest, u16 itemId)
 {
+    u8 *str;
+
     switch (gBagPosition.pocket)
     {
     case TMHM_POCKET:
@@ -930,6 +960,14 @@ static void GetItemName(s8 *dest, u16 itemId)
     default:
         CopyItemName(itemId, dest);
         break;
+    }
+
+    if (gBagPosition.location == ITEMMENULOCATION_CRAFT && IsOnCraftTable(itemId)){
+        
+        ColorMenuItemString(gStringVar4, COLORID_CRAFT);
+        str = StringLength(gStringVar4) + gStringVar4;
+        StringCopy(str, dest);
+        StringCopy(dest, gStringVar4);
     }
 }
 
@@ -1244,9 +1282,11 @@ static void Task_BagMenu_HandleInput(u8 taskId)
                     {
                         PlaySE(SE_SELECT);
                         StartItemSwap(taskId);
+                        return;
                     }
                 }
-                return;
+                if (gBagPosition.location == ITEMMENULOCATION_CRAFT)
+                    PlaySE(SE_SUDOWOODO_SHAKE);
             }
             break;
         }
@@ -1269,13 +1309,13 @@ static void Task_BagMenu_HandleInput(u8 taskId)
             break;
         default: // A_BUTTON
             PlaySE(SE_SELECT);
+            gSpecialVar_ItemId = BagGetItemIdByPocketPosition(gBagPosition.pocket + 1, listPosition);
             if (!CanCraftItem(taskId))
                 break;
             BagDestroyPocketScrollArrowPair();
             BagMenu_PrintCursor(tListTaskId, COLORID_GRAY_CURSOR);
             tListPosition = listPosition;
             tQuantity = BagGetQuantityByPocketPosition(gBagPosition.pocket + 1, listPosition);
-            gSpecialVar_ItemId = BagGetItemIdByPocketPosition(gBagPosition.pocket + 1, listPosition);
             sContextMenuFuncs[gBagPosition.location](taskId); //craft
             break;
         }
@@ -1538,11 +1578,28 @@ static void CancelItemSwap(u8 taskId)
     gTasks[taskId].func = Task_BagMenu_HandleInput;
 }
 
+static bool32 TryAddCraftItem(void){
+
+    u32 i;
+
+    for (i = 0; i < 4; i++)
+    {
+        if (sCurrentCraftTableItems[i][0] == ITEM_NONE)
+            sCurrentCraftTableItems[i][0] = gSpecialVar_ItemId;
+            RemoveBagItem(gSpecialVar_ItemId, 1);
+            return TRUE;
+    }
+
+
+
+    return FALSE;
+}
+
 static bool32 CanCraftItem(u8 taskId)
 {
-    if (gBagPosition.location == ITEMMENULOCATION_CRAFT &&
-    (gBagPosition.pocket == KEYITEMS_POCKET || !IsHoldingItemAllowed(gSpecialVar_ItemId) ||
-     gBagPosition.pocket == TMHM_POCKET))
+    if (gBagPosition.location == ITEMMENULOCATION_CRAFT && 
+        (gBagPosition.pocket == KEYITEMS_POCKET || !IsHoldingItemAllowed(gSpecialVar_ItemId) ||
+        gBagPosition.pocket == TMHM_POCKET))
     {
         gSpecialVar_ItemId = ITEM_NONE;
         DisplayItemMessage(taskId, FONT_NORMAL, gText_DadsAdvice, CloseItemMessage);
