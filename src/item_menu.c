@@ -211,7 +211,8 @@ static void ConfirmToss(u8);
 static void CancelToss(u8);
 static void ConfirmSell(u8);
 static void CancelSell(u8);
-static bool32 TryAddCraftItem(void);
+static u32 CheckForCraftSpace(u8);
+static u32 IsOnCraftTable(u16 itemId);
 static bool32 CanCraftItem(u8);
 
 static const struct BgTemplate sBgTemplates_ItemMenu[] =
@@ -378,6 +379,8 @@ static const struct ScrollArrowsTemplate sBagScrollArrowsTemplate = {
 };
 
 static const u8 sRegisteredSelect_Gfx[] = INCBIN_U8("graphics/bag/select_button.4bpp");
+
+static const u8 sText_CraftTableSwap[] = _("Swapping items{PAUSE 25}.{PAUSE 25}.{PAUSE 25}.");
 
 enum {
     COLORID_NORMAL,
@@ -884,7 +887,6 @@ static void LoadBagItemListBuffers(u8 pocketId)
     u16 i;
     struct BagPocket *pocket = &gBagPockets[pocketId];
     struct ListMenuItem *subBuffer;
-    u8 *str;
 
     if (!gBagMenu->hideCloseBagText)
     {
@@ -916,20 +918,18 @@ static void LoadBagItemListBuffers(u8 pocketId)
     gMultiuseListMenuTemplate.maxShowed = gBagMenu->numShownItems[pocketId];
 }
 
-static bool32 IsOnCraftTable(u16 itemId){
+static u32 IsOnCraftTable(u16 itemId){
 
     u32 i;
 
     for (i = 0; i < 4; i++)
     {
         if (sCurrentCraftTableItems[i][0] == itemId)
-            return TRUE;
+            return i + 1;
     }
 
     return FALSE;
 }
-
-extern const u8 gText_4Spaces[];
 
 static void GetItemName(s8 *dest, u16 itemId)
 {
@@ -955,14 +955,23 @@ static void GetItemName(s8 *dest, u16 itemId)
     case BERRIES_POCKET:
         ConvertIntToDecimalStringN(gStringVar1, itemId - FIRST_BERRY_INDEX + 1, STR_CONV_MODE_LEADING_ZEROS, 2);
         CopyItemName(itemId, gStringVar2);
+
+        if (gBagPosition.location == ITEMMENULOCATION_CRAFT && IsOnCraftTable(itemId) > 0){
+        
+            ColorMenuItemString(gStringVar4, COLORID_CRAFT);
+            str = StringLength(gStringVar4) + gStringVar4;
+            StringCopy(str, gStringVar2);
+            StringCopy(gStringVar2, gStringVar4);
+        }
+
         StringExpandPlaceholders(dest, gText_NumberItem_TMBerry);
-        break;
+        return;
     default:
         CopyItemName(itemId, dest);
         break;
     }
 
-    if (gBagPosition.location == ITEMMENULOCATION_CRAFT && IsOnCraftTable(itemId)){
+    if (gBagPosition.location == ITEMMENULOCATION_CRAFT && IsOnCraftTable(itemId) > 0){
         
         ColorMenuItemString(gStringVar4, COLORID_CRAFT);
         str = StringLength(gStringVar4) + gStringVar4;
@@ -1262,6 +1271,12 @@ static void Task_BagMenu_HandleInput(u8 taskId)
     u16 *cursorPos = &gBagPosition.cursorPosition[gBagPosition.pocket];
     s32 listPosition;
 
+    if (gBagPosition.location == ITEMMENULOCATION_CRAFT){
+        struct ListMenu *list = (void *) gTasks[tListTaskId].data;
+        tItemCount = 1;
+        gSpecialVar_ItemId = BagGetItemIdByPocketPosition(gBagPosition.pocket + 1, list->template.items[list->scrollOffset + list->selectedRow].id);
+    }
+
     if (MenuHelpers_ShouldWaitForLinkRecv() != TRUE && !gPaletteFade.active)
     {
         switch (GetSwitchBagPocketDirection())
@@ -1285,8 +1300,43 @@ static void Task_BagMenu_HandleInput(u8 taskId)
                         return;
                     }
                 }
-                if (gBagPosition.location == ITEMMENULOCATION_CRAFT)
-                    PlaySE(SE_SUDOWOODO_SHAKE);
+                /*if (gBagPosition.location == ITEMMENULOCATION_CRAFT){
+                    
+                    struct ListMenu *list = (void *) gTasks[tListTaskId].data;
+                    tItemCount = 1;
+                    gSpecialVar_ItemId = BagGetItemIdByPocketPosition(gBagPosition.pocket + 1, list->template.items[list->scrollOffset + list->selectedRow].id);
+
+                    if (IsOnCraftTable(gSpecialVar_ItemId) > 0){
+                
+                        sCurrentCraftTableItems[IsOnCraftTable(gSpecialVar_ItemId) - 1][0] = ITEM_NONE;
+
+                        AddBagItem(gSpecialVar_ItemId, 1);
+                        tItemCount = 0;
+                        Task_RemoveItemFromBag(taskId);
+                        break;
+                    }
+                    else if (CanCraftItem(taskId) && CheckForCraftSpace(taskId) > 0)
+                    {
+                        sCurrentCraftTableItems[CheckForCraftSpace(taskId) - 1][0] = gSpecialVar_ItemId;
+                        Task_RemoveItemFromBag(taskId);                
+                    }    
+                    return;
+                }*/
+            }
+
+            if ((JOY_HELD(SELECT_BUTTON) && JOY_NEW(A_BUTTON)) && CanCraftItem(taskId) && CheckForCraftSpace(taskId) > 0){
+                
+                sCurrentCraftTableItems[CheckForCraftSpace(taskId) - 1][0] = gSpecialVar_ItemId;
+                Task_RemoveItemFromBag(taskId);                    
+                return;
+            }
+            if ((JOY_HELD(SELECT_BUTTON) && JOY_NEW(B_BUTTON)) && IsOnCraftTable(gSpecialVar_ItemId) > 0){
+
+                sCurrentCraftTableItems[IsOnCraftTable(gSpecialVar_ItemId) - 1][0] = ITEM_NONE;
+                AddBagItem(gSpecialVar_ItemId, 1);
+                tItemCount = 0;
+                Task_RemoveItemFromBag(taskId);
+                return;
             }
             break;
         }
@@ -1310,8 +1360,14 @@ static void Task_BagMenu_HandleInput(u8 taskId)
         default: // A_BUTTON
             PlaySE(SE_SELECT);
             gSpecialVar_ItemId = BagGetItemIdByPocketPosition(gBagPosition.pocket + 1, listPosition);
-            if (!CanCraftItem(taskId))
+            
+            if (!CanCraftItem(taskId) || JOY_HELD(SELECT_BUTTON))                
                 break;
+            if ((sCurrentCraftTableItems[sCraftMenuCursorPos][0] != ITEM_NONE && sCurrentCraftTableItems[sCraftMenuCursorPos][0] != gSpecialVar_ItemId)){
+                DisplayItemMessage(taskId, FONT_NORMAL, sText_CraftTableSwap, Task_FadeAndCloseBagMenu);
+                break;
+            }
+            
             BagDestroyPocketScrollArrowPair();
             BagMenu_PrintCursor(tListTaskId, COLORID_GRAY_CURSOR);
             tListPosition = listPosition;
@@ -1578,20 +1634,18 @@ static void CancelItemSwap(u8 taskId)
     gTasks[taskId].func = Task_BagMenu_HandleInput;
 }
 
-static bool32 TryAddCraftItem(void){
+static u32 CheckForCraftSpace(u8 taskId){
 
     u32 i;
 
     for (i = 0; i < 4; i++)
     {
-        if (sCurrentCraftTableItems[i][0] == ITEM_NONE)
-            sCurrentCraftTableItems[i][0] = gSpecialVar_ItemId;
-            RemoveBagItem(gSpecialVar_ItemId, 1);
-            return TRUE;
+        if (sCurrentCraftTableItems[i][0] == ITEM_NONE){
+            return i + 1;
+        }
     }
 
-
-
+    DisplayItemMessage(taskId, FONT_NORMAL, gText_NoMoreRoomForThis, CloseItemMessage);
     return FALSE;
 }
 
@@ -1972,7 +2026,7 @@ static void Task_RemoveItemFromBag(u8 taskId)
     u16 *scrollPos = &gBagPosition.scrollPosition[gBagPosition.pocket];
     u16 *cursorPos = &gBagPosition.cursorPosition[gBagPosition.pocket];
 
-    if (JOY_NEW(A_BUTTON | B_BUTTON))
+    if (JOY_NEW(A_BUTTON | B_BUTTON) || gBagPosition.location == ITEMMENULOCATION_CRAFT)
     {
         PlaySE(SE_SELECT);
         RemoveBagItem(gSpecialVar_ItemId, tItemCount);

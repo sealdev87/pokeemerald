@@ -86,7 +86,7 @@ EWRAM_DATA static u8 sCraftOptionsWindowId = 0;
 EWRAM_DATA static u8 sCraftSousChefsWindowId = 0;
 
 EWRAM_DATA u16 sCurrentCraftTableItems[4][2] = {0}; //craft table items, actions
-EWRAM_DATA static u8 sCraftMenuCursorPos = 0;
+EWRAM_DATA u8 sCraftMenuCursorPos = 0;
 EWRAM_DATA static u8 sInitCraftMenuData[1] = {0};
 EWRAM_DATA static u8 sCraftState = 0;
 EWRAM_DATA static u32 sPauseCounter = 0;
@@ -177,11 +177,11 @@ static const u8 sTextColorTable[][3] =
 //User Interaction
 static const u8 sText_ConfirmPackUp[] = _("Would you like to pack up?");
 static const u8 sText_ConfirmReady[] = _("This looks like it'll be good.\nCraft {STR_VAR_1}{STR_VAR_2}?");
-static const u8 sText_ConfirmReadyQty[] = _(" ({COLOR GREEN}{SHADOW LIGHT_GREEN}{STR_VAR_1}{COLOR DARK_GRAY}{SHADOW LIGHT_GRAY})");
+static const u8 sText_ConfirmReadyQty[] = _(" {COLOR GREEN}{SHADOW LIGHT_GREEN}({STR_VAR_1}){COLOR DARK_GRAY}{SHADOW LIGHT_GRAY}");
 static const u8 sText_CraftNo[] = _("Hmm, this won't make anything useful...");
 static const u8 sText_WouldYouLikeToCraft[] = _("There's a crafting table.\nWant to craft something?");
     //each item should get array w craftinprocess messages & requirements (indoors or heat/water/spice/tools/ice)
-static const u8 sText_CraftInProcess[] = _("Prepping ingredients... {PAUSE 15}Assembling... {PAUSE 15}Finishing...{PAUSE_UNTIL_PRESS}");
+static const u8 sText_CraftInProcess[] = _("Prepping ingredients... {PAUSE 25}Assembling...\n{PAUSE 25}Finishing up{PAUSE 25}.{PAUSE 25}.{PAUSE 25}.{PAUSE 25}\p{PAUSE_MUSIC}{PLAY_BGM MUS_OBTAIN_ITEM}Item crafted!{RESUME_MUSIC}\p{PLAYER} put away the {STR_VAR_1}\nin the {STR_VAR_2} pocket.{PAUSE_UNTIL_PRESS}");
 static const u8 sText_ItemCrafted[] = _("{STR_VAR_2}{STR_VAR_1} crafted!");
 static const u8 sText_AddItem[] = _("{COLOR BLUE}ADD ITEM");
 static const u8 sText_AButton[] = _("{A_BUTTON}");
@@ -189,9 +189,7 @@ static const u8 sText_BButton[] = _("{B_BUTTON}");
 static const u8 sText_InBag[] = _("IN BAG:");
 static const u8 sText_Var2Var1[] = _("{STR_VAR_2}{STR_VAR_1}");
 extern const u8 gText_DiplomaEmpty[]; //red, lol
-static const u8 sText_PackingUp[] = _("Packing up{PAUSE 15}.{PAUSE 15}.{PAUSE 15}.{PAUSE 15}\p{PLAYER} put the items back in the bag.{PAUSE_UNTIL_PRESS}");
-
-
+static const u8 sText_PackingUp[] = _("Packing up{PAUSE 25}.{PAUSE 25}.{PAUSE 25}.{PAUSE 25}\p{PLAYER} put the items back in the bag.{PAUSE_UNTIL_PRESS}");
 
 enum CraftWindows {
     WINDOW_CRAFT_MSG,
@@ -1157,13 +1155,18 @@ static u8 CraftMenuReadyCallback(void){
     AddBagItem(CraftProduct, CraftQty);
     //AddSwap if more CraftQty
 
-    ClearCraftTable();
     ClearCraftInfo(sCraftMenuCursorPos);
 
-    //showcraftmessage Crafting.... Item crafted!
-    CraftReturnToTableFromDialogue();
+    CopyItemName(CraftProduct, gStringVar1);
+    StringCopy(gStringVar2, gPocketNamesStringsTable[ItemId_GetPocket(CraftProduct) - 1]);
+    StringExpandPlaceholders(gStringVar4, sText_CraftInProcess);
+    ShowCraftMessage(gStringVar4, CraftDialoguePackUp);
 
-    return CRAFT_MESSAGE_CONFIRM;
+    ClearCraftTable();
+    //showcraftmessage Crafting.... Item crafted!
+    //CraftReturnToTableFromDialogue();
+
+    return CRAFT_MESSAGE_IN_PROGRESS;
 }
 
 static bool8 CraftMenuCancelCallback(void){
@@ -1444,8 +1447,11 @@ static bool8 CraftConfirmCallback(void){
         switch (CraftMessage)
         {
         case CRAFT_PACKUP_CONFIRM:
+            PlaySE(SE_WIN_OPEN);
+            HideCraftMenu();
             return TRUE;
         case CRAFT_READY_CONFIRM:
+            CraftReturnToTableFromDialogue();
             break;
         }
     case CRAFT_MESSAGE_CANCEL:
@@ -1460,8 +1466,6 @@ static u8 CraftDialoguePackUp(void){
 
     //if (JOY_NEW(A_BUTTON) || JOY_NEW(B_BUTTON)){
         ClearDialogWindowAndFrame(0, TRUE);
-        PlaySE(SE_WIN_OPEN);
-        HideCraftMenu();
         return CRAFT_MESSAGE_CONFIRM;
     //}
 
