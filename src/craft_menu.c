@@ -105,7 +105,6 @@ static void CraftMenuRemoveBagCallback(void);
 static u8 CraftMenuReadyCallback(void);
 static bool8 CraftMenuCancelCallback(void);
 
-
 // Functions
 static void OrganizeCraftItems(u16 *SwapCraftOrder);
 static u16 FindCraftProduct(int);
@@ -136,7 +135,34 @@ static bool8 HandleCraftMenuInput(void);
 static void CraftMenuTask(u8 taskId);
 static bool8 FieldCB_ReturnToFieldCraftMenu(void);
 
+static const u16 Craft_Recipes[][6] = {
+// Ingredients (ITEM_1234) must be arranged with Smallest -> Largest ItemId
+//  {ITEM_1,        ITEM_2,            ITEM_3,            ITEM_4,            ITEM_PRODUCT,   QUANTITY},    
+    {0,             0,                 ITEM_POTION,       ITEM_PECHA_BERRY,  ITEM_ANTIDOTE,         3},
+    {0,             ITEM_REPEL,        ITEM_REPEL,        ITEM_REPEL,        ITEM_SUPER_REPEL,      2},
+    {0,             ITEM_SUPER_REPEL,  ITEM_SUPER_REPEL,  ITEM_SUPER_REPEL,  ITEM_MAX_REPEL,        2},
+    {0,             0,                 ITEM_POKE_BALL,    ITEM_MAX_REPEL,    ITEM_SMOKE_BALL,       1},
+    {0,             0,                 ITEM_ORAN_BERRY,   ITEM_ORAN_BERRY,   ITEM_BERRY_JUICE,      1}
+};
+
+//Strings
 static const u8 sText_Ready[] = _("READY");
+static const u8 sText_ConfirmPackUp[] = _("Would you like to pack up?");
+static const u8 sText_ConfirmReady[] = _("This looks like it'll be good.\nCraft {STR_VAR_1}{STR_VAR_2}?");
+static const u8 sText_ConfirmReadyQty[] = _(" {COLOR GREEN}{SHADOW LIGHT_GREEN}({STR_VAR_1}){COLOR DARK_GRAY}{SHADOW LIGHT_GRAY}");
+static const u8 sText_CraftNo[] = _("Hmm, this won't make anything useful...");
+static const u8 sText_WouldYouLikeToCraft[] = _("There's a crafting table.\nWant to craft something?");
+    //each item should get array w craftinprocess messages & requirements (indoors or heat/water/spice/tools/ice)
+static const u8 sText_CraftInProcess[] = _("Prepping ingredients... {PAUSE 25}Assembling...\n{PAUSE 25}Finishing up{PAUSE 25}.{PAUSE 25}.{PAUSE 25}.{PAUSE 25}\p{PAUSE_MUSIC}{PLAY_BGM MUS_OBTAIN_ITEM}Item crafted!{RESUME_MUSIC}\p{PLAYER} put away the {STR_VAR_1}\nin the {STR_VAR_2} pocket.{PAUSE_UNTIL_PRESS}");
+static const u8 sText_ItemCrafted[] = _("{STR_VAR_2}{STR_VAR_1} crafted!");
+static const u8 sText_AddItem[] = _("ADD ITEM");
+static const u8 sText_ColorShadowBlue[] = _("{COLOR BLUE}{SHADOW LIGHT_BLUE}");
+static const u8 sText_AButton[] = _("{A_BUTTON}");
+static const u8 sText_BButton[] = _("{B_BUTTON}");
+static const u8 sText_InBag[] = _("IN BAG:");
+static const u8 sText_Var2Var1[] = _("{STR_VAR_2}{STR_VAR_1}");
+extern const u8 gText_DiplomaEmpty[]; //red, lol
+static const u8 sText_PackingUp[] = _("Packing up{PAUSE 25}.{PAUSE 25}.{PAUSE 25}.{PAUSE 25}\p{PLAYER} put the items back in the bag.{PAUSE_UNTIL_PRESS}");
 
 static const struct MenuAction sCraftTableActions[] = {
     [TABLE_ACTION_BLANK]            = {gText_Dash,        {.u8_void = CraftMenuAddSwapCallback}},
@@ -168,28 +194,11 @@ static const u8 sTextColorTable[][3] =
 {
     [COLORID_GRAY]       = {TEXT_COLOR_WHITE,       TEXT_COLOR_DARK_GRAY,  TEXT_COLOR_LIGHT_GRAY},
     [COLORID_BLACK]      = {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE,      TEXT_COLOR_DARK_GRAY},
-    [COLORID_LIGHT_GRAY] = {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_LIGHT_GRAY, TEXT_COLOR_RED},
+    [COLORID_LIGHT_GRAY] = {TEXT_COLOR_WHITE,       TEXT_COLOR_LIGHT_GRAY, TEXT_COLOR_DARK_GRAY},
     [COLORID_BLUE]       = {TEXT_COLOR_WHITE,       TEXT_COLOR_BLUE,       TEXT_COLOR_LIGHT_BLUE},
     [COLORID_GREEN]      = {TEXT_COLOR_WHITE,       TEXT_COLOR_GREEN,      TEXT_COLOR_LIGHT_GREEN},
     [COLORID_RED]        = {TEXT_COLOR_WHITE,       TEXT_COLOR_RED,        TEXT_COLOR_LIGHT_RED},
 };
-
-//User Interaction
-static const u8 sText_ConfirmPackUp[] = _("Would you like to pack up?");
-static const u8 sText_ConfirmReady[] = _("This looks like it'll be good.\nCraft {STR_VAR_1}{STR_VAR_2}?");
-static const u8 sText_ConfirmReadyQty[] = _(" {COLOR GREEN}{SHADOW LIGHT_GREEN}({STR_VAR_1}){COLOR DARK_GRAY}{SHADOW LIGHT_GRAY}");
-static const u8 sText_CraftNo[] = _("Hmm, this won't make anything useful...");
-static const u8 sText_WouldYouLikeToCraft[] = _("There's a crafting table.\nWant to craft something?");
-    //each item should get array w craftinprocess messages & requirements (indoors or heat/water/spice/tools/ice)
-static const u8 sText_CraftInProcess[] = _("Prepping ingredients... {PAUSE 25}Assembling...\n{PAUSE 25}Finishing up{PAUSE 25}.{PAUSE 25}.{PAUSE 25}.{PAUSE 25}\p{PAUSE_MUSIC}{PLAY_BGM MUS_OBTAIN_ITEM}Item crafted!{RESUME_MUSIC}\p{PLAYER} put away the {STR_VAR_1}\nin the {STR_VAR_2} pocket.{PAUSE_UNTIL_PRESS}");
-static const u8 sText_ItemCrafted[] = _("{STR_VAR_2}{STR_VAR_1} crafted!");
-static const u8 sText_AddItem[] = _("{COLOR BLUE}ADD ITEM");
-static const u8 sText_AButton[] = _("{A_BUTTON}");
-static const u8 sText_BButton[] = _("{B_BUTTON}");
-static const u8 sText_InBag[] = _("IN BAG:");
-static const u8 sText_Var2Var1[] = _("{STR_VAR_2}{STR_VAR_1}");
-extern const u8 gText_DiplomaEmpty[]; //red, lol
-static const u8 sText_PackingUp[] = _("Packing up{PAUSE 25}.{PAUSE 25}.{PAUSE 25}.{PAUSE 25}\p{PLAYER} put the items back in the bag.{PAUSE_UNTIL_PRESS}");
 
 enum CraftWindows {
     WINDOW_CRAFT_MSG,
@@ -267,16 +276,6 @@ static void UpdateCraftTable(void);
 static void UpdateCraftInfoWindow(void);
 static void ClearCraftTable(void);
 static void Task_CreateCraftMenu(TaskFunc followupFunc);
-
-static const u16 Craft_Recipes[][6] = {
-// Ingredients (ITEM_1234) must be arranged with Smallest -> Largest ItemId
-//  {ITEM_1,        ITEM_2,            ITEM_3,            ITEM_4,            ITEM_PRODUCT,   QUANTITY},    
-    {0,             0,                 ITEM_POTION,       ITEM_PECHA_BERRY,  ITEM_ANTIDOTE,         3},
-    {0,             ITEM_REPEL,        ITEM_REPEL,        ITEM_REPEL,        ITEM_SUPER_REPEL,      2},
-    {0,             ITEM_SUPER_REPEL,  ITEM_SUPER_REPEL,  ITEM_SUPER_REPEL,  ITEM_MAX_REPEL,        2},
-    {0,             0,                 ITEM_POKE_BALL,    ITEM_MAX_REPEL,    ITEM_SMOKE_BALL,       1},
-    {0,             0,                 ITEM_ORAN_BERRY,   ITEM_ORAN_BERRY,   ITEM_BERRY_JUICE,      1}
-};
 
 //Menu / Window Functions
 static void BuildCraftTableActions(void){
@@ -499,7 +498,7 @@ static void UpdateCraftInfoWindow(void){
         //This and (A) button below will replace with SEL= Recipe Book, once the book is implemented that is
         //Add Item 
         StringCopy(gStringVar1, sText_AddItem);
-        StringCopy(gStringVar2, gText_ColorBlue);
+        StringCopy(gStringVar2, sText_ColorShadowBlue);
         StringExpandPlaceholders(gStringVar4, sText_Var2Var1);
         AddTextPrinterParameterized(sCraftInfoWindowId, FONT_SMALL, gStringVar4, 25, 1, TEXT_SKIP_DRAW, NULL);
 
@@ -527,7 +526,7 @@ static void UpdateCraftInfoWindow(void){
 
             // READY
             StringCopy(gStringVar1, sText_Ready);
-            StringCopy(gStringVar2, gText_ColorBlue);
+            StringCopy(gStringVar2, sText_ColorShadowBlue);
             StringExpandPlaceholders(gStringVar4, sText_Var2Var1);
             AddTextPrinterParameterized(sCraftInfoWindowId, FONT_SMALL, gStringVar4, 25, 16, TEXT_SKIP_DRAW, NULL);
 
@@ -539,7 +538,7 @@ static void UpdateCraftInfoWindow(void){
 
             // Cancel (in blue1)
             StringCopy(gStringVar1, gText_Cancel);
-            StringCopy(gStringVar2, gText_ColorBlue);
+            StringCopy(gStringVar2, sText_ColorShadowBlue);
             StringExpandPlaceholders(gStringVar4, sText_Var2Var1);
             AddTextPrinterParameterized(sCraftInfoWindowId, FONT_SMALL, gStringVar4, 25, 16, TEXT_SKIP_DRAW, NULL);
         }
@@ -893,10 +892,30 @@ static void Task_WaitForPaletteFade(u8 taskId)
         HandleCraftMenuInput;
 }
 
+static void CraftMenu_PrintCursorAtPos(u8 cursorPos, u8 colorIndex){
+
+    u8 x, y;
+
+    y = 1;
+
+    if (cursorPos == 0 || cursorPos == 2)
+        x = 0;
+    else
+        x = 9*8;
+
+    if (cursorPos > 1)
+        y = 16;
+
+    //if (colorIndex == COLORID_NONE)
+    FillWindowPixelRect(sCraftTableWindowId, PIXEL_FILL(TEXT_COLOR_WHITE), 0, y, GetMenuCursorDimensionByFont(FONT_NORMAL, 0), GetMenuCursorDimensionByFont(FONT_NORMAL, 1));
+    //BagMenu_Print(WIN_ITEM_LIST, FONT_NORMAL, gText_SelectorArrow2, 0, y, 0, 0, 0, colorIndex);
+    AddTextPrinterParameterized4(sCraftTableWindowId, FONT_NORMAL, x, y, 0, 0, sTextColorTable[colorIndex], 0, gText_SelectorArrow2);
+}
+
 //Callbacks / Actions
 static bool8 CraftMenuItemOptionsCallback(void){
     
-    //gray cursor
+    CraftMenu_PrintCursorAtPos(sCraftMenuCursorPos, COLORID_LIGHT_GRAY);
     ShowCraftOptionsWindow();
     sCraftState = STATE_OPTIONS_INPUT;
     gMenuCallback = HandleCraftMenuInput;
@@ -1078,23 +1097,18 @@ static u8 CraftMenuPackUpCallback(void){
 
 
 
-static void HideOptionsWindow(void)
-{
+static void HideOptionsWindow(void){
+
     ClearStdWindowAndFrame(sCraftOptionsWindowId, TRUE);
     sCraftMenuCursorPos = InitMenuGrid(sCraftTableWindowId, FONT_NARROW, 0, 1, 9 * 8, 15, 2, //9*8 from ScriptMenu_MultichoiceGrid, 15 from FONT_NARROW
                                         2, 4, sCraftMenuCursorPos);
     sCraftState = STATE_TABLE_INPUT;
-
 }
 
 static bool8 CraftMenuAddSwapCallback(void){
-    /*HideOptionsWindow();
-    sCraftState = STATE_TABLE_INPUT;
-    return TRUE;
-    */
 
-    if (!gPaletteFade.active)
-    {
+    if (!gPaletteFade.active){
+
         PlayRainStoppingSoundEffect();
         HideCraftMenu();
         CleanupOverworldWindowsAndTilemaps();
@@ -1109,7 +1123,6 @@ static bool8 CraftMenuAddSwapCallback(void){
 static bool8 CraftMenuDoOptionsSwapCallback(void){
 
     gMenuCallback = CraftMenuAddSwapCallback;
-
     sCraftState = STATE_TABLE_INPUT;
 
     return FALSE;
@@ -1117,9 +1130,7 @@ static bool8 CraftMenuDoOptionsSwapCallback(void){
 
 static bool8 CraftMenuDoOptionsReadyCallback(void){
 
-
     CraftMessage = CRAFT_READY_CONFIRM;
-
     gMenuCallback = CraftStartConfirmCallback;
 
     return FALSE;
@@ -1163,13 +1174,12 @@ static u8 CraftMenuReadyCallback(void){
     ShowCraftMessage(gStringVar4, CraftDialoguePackUp);
 
     ClearCraftTable();
-    //showcraftmessage Crafting.... Item crafted!
-    //CraftReturnToTableFromDialogue();
 
     return CRAFT_MESSAGE_IN_PROGRESS;
 }
 
 static bool8 CraftMenuCancelCallback(void){
+    
     PlaySE(SE_WIN_OPEN);
     HideOptionsWindow();
 
@@ -1195,7 +1205,6 @@ void HideCraftMenu(void){
         sCraftOptionsWindowId = WINDOW_NONE;
     }
 
-
     ScriptUnfreezeObjectEvents();
     UnlockPlayerFieldControls();
 }
@@ -1204,7 +1213,6 @@ static void OrganizeCraftItems(u16 *SwapCraftOrder){
 
     u32 i;
     u16 CraftSwapItem;
-    //u16 SwapCraftOrder[4];
 
     //Set up temp list
     for (i = 0; i < 4; i++){
@@ -1241,20 +1249,18 @@ static u16 FindCraftProduct(int PrdOrQty){
 
     OrganizeCraftItems(CraftItems);
 
-    for (i = 0; i < ARRAY_COUNT(Craft_Recipes); i++)
-    {
+    for (i = 0; i < ARRAY_COUNT(Craft_Recipes); i++){
 
-        for (j = 0; j < 4; j++)
-        {
+        for (j = 0; j < 4; j++){
+
             if (CraftItems[j] != Craft_Recipes[i][j])
                 break;
             else if (j == 3){
                 CraftProduct = Craft_Recipes[i][4 + PrdOrQty];
                 break;
             }
-            else {
+            else
                 CraftProduct = ITEM_NONE;
-            }
         }
 
         if (CraftProduct != ITEM_NONE)
@@ -1264,15 +1270,15 @@ static u16 FindCraftProduct(int PrdOrQty){
     return CraftProduct;
 }
 
-static void InitItemSprites(void)
-{
+static void InitItemSprites(void){
+
     //Peaches for my peach <3
     ShowItemIconSprite(ITEM_PECHA_BERRY,FALSE,200,1);
     DestroyItemIconSprite();
 }
 
-static void CraftReturnToTableFromDialogue(void)
-{
+static void CraftReturnToTableFromDialogue(void){
+
     ClearDialogWindowAndFrame(0, TRUE);
     ClearDialogWindowAndFrameToTransparent(0, FALSE);
     
@@ -1281,41 +1287,38 @@ static void CraftReturnToTableFromDialogue(void)
         ;
 }
 
-static u8 CraftPackUpConfirmInputCallback(void)
-{
-    switch (Menu_ProcessInputNoWrapClearOnChoose())
-    {
-    case 0: // Yes
-        //ClearDialogWindowAndFrame(0, TRUE);
-        //CraftReturnToTableFromDialogue();
+static u8 CraftPackUpConfirmInputCallback(void){
 
-        switch (CraftMessage)
-        {
-        case CRAFT_PACKUP_CONFIRM:
-            sCraftMenuCursorPos = 3;
-            sPauseCounter = 30;
-            sCraftDialogCallback = CraftMenuPackUpCallback;
-            //sCraftDialogCallback = CraftPackUpCheckDelay;
+    switch (Menu_ProcessInputNoWrapClearOnChoose()){
+
+        case 0: // Yes
+
+            switch (CraftMessage){
+
+                case CRAFT_PACKUP_CONFIRM:
+                    sCraftMenuCursorPos = 3;
+                    sPauseCounter = 30;
+                    //sCraftDialogCallback = CraftPackUpCheckDelay;
+                    sCraftDialogCallback = CraftMenuPackUpCallback;
+                    break;
+                case CRAFT_READY_CONFIRM:
+                    sCraftDialogCallback = CraftMenuReadyCallback;
+                    break;
+                default:
+                    break;
+            }
             break;
-        case CRAFT_READY_CONFIRM:
-            sCraftDialogCallback = CraftMenuReadyCallback;
-            break;
-        default:
-            break;
-        }
-        break;
-        //return CRAFT_MESSAGE_CONFIRM;
-    case MENU_B_PRESSED:
-    case 1:
-        CraftReturnToTableFromDialogue();
-        return CRAFT_MESSAGE_CANCEL;
+        case MENU_B_PRESSED:
+        case 1:
+            CraftReturnToTableFromDialogue();
+            return CRAFT_MESSAGE_CANCEL;
     }
 
     return CRAFT_MESSAGE_IN_PROGRESS;
 }
 
-static u8 CraftYesNoCallback(void)
-{
+static u8 CraftYesNoCallback(void){
+
     u8 MessageState;
 
     //For CraftMessages at or over 1, always choose Yes default. 
@@ -1323,15 +1326,7 @@ static u8 CraftYesNoCallback(void)
     
     DisplayYesNoMenuWithDefault(MessageState); // Show Yes/No menu, 0 = Yes, 1 = No
     
-    //switch (CraftMessage)
-    //{
-    //case CRAFT_PACKUP_CONFIRM:
-        sCraftDialogCallback = CraftPackUpConfirmInputCallback;
-    //    break;
-    
-    //case CRAFT_READY_CONFIRM:
-    //    break;
-    //}
+    sCraftDialogCallback = CraftPackUpConfirmInputCallback;
     
     return CRAFT_MESSAGE_IN_PROGRESS;
 }
@@ -1345,22 +1340,17 @@ static u8 CraftMessageWaitForButtonPress(void){
     }
 
     return CRAFT_MESSAGE_IN_PROGRESS;
-
 }
 
-static void ShowCraftMessage(const u8 *message, u8 (*craftCallback)(void))
-{
+static void ShowCraftMessage(const u8 *message, u8 (*craftCallback)(void)){
+
     StringExpandPlaceholders(gStringVar4, message);
     LoadMessageBoxAndFrameGfx(0, TRUE);
     AddTextPrinterForMessage_2(TRUE);
     sCraftDialogCallback = craftCallback;
 }
 
-static u8 sCraftPackupConfirmCallback(void)
-{
-    //ClearStdWindowAndFrame(GetStartMenuWindowId(), FALSE);
-    //RemoveStartMenuWindow(); //removes and sets to window_none
-    //ShowSaveInfoWindow(); //craft copywin_gfx
+static u8 sCraftPackupConfirmCallback(void){
 
     const u8 *message;
     u16 CraftProduct, CraftQty;
@@ -1372,32 +1362,33 @@ static u8 sCraftPackupConfirmCallback(void)
     FreezeObjectEvents();
     LockPlayerFieldControls();
 
-    switch (CraftMessage)
-    {
-    case CRAFT_PACKUP_CONFIRM:
-        message = sText_ConfirmPackUp;
-        break;
-    case CRAFT_READY_CONFIRM:
-        if (CraftProduct != ITEM_NONE){
-            //expand those placeholders
-            if (CraftQty > 1)
-            {
-                ConvertIntToDecimalStringN(gStringVar1, CraftQty, STR_CONV_MODE_LEFT_ALIGN, 2);
-                StringExpandPlaceholders(gStringVar2, sText_ConfirmReadyQty);
+    switch (CraftMessage){
+
+        case CRAFT_PACKUP_CONFIRM:
+            message = sText_ConfirmPackUp;
+            break;
+        case CRAFT_READY_CONFIRM:
+            if (CraftProduct != ITEM_NONE){
+
+                //expand those placeholders
+                if (CraftQty > 1){
+                    ConvertIntToDecimalStringN(gStringVar1, CraftQty, STR_CONV_MODE_LEFT_ALIGN, 2);
+                    StringExpandPlaceholders(gStringVar2, sText_ConfirmReadyQty);
+                }
+                else
+                    StringCopy(gStringVar2, gText_EmptyString2);
+
+                CopyItemName(CraftProduct, gStringVar1);
+                StringExpandPlaceholders(gStringVar4, sText_ConfirmReady);
+                message = gStringVar4;
+                break;
             }
             else
-                StringCopy(gStringVar2, gText_EmptyString2);
+                message = sText_CraftNo;
 
-            CopyItemName(CraftProduct, gStringVar1);
-            StringExpandPlaceholders(gStringVar4, sText_ConfirmReady);
-            message = gStringVar4;
-            break;
-        }
-        else
-            message = sText_CraftNo;
             ShowCraftMessage(message, CraftMessageWaitForButtonPress);
             return CRAFT_MESSAGE_IN_PROGRESS;
-        break;
+            break;
     }
 
     ShowCraftMessage(message, CraftYesNoCallback);
@@ -1409,27 +1400,25 @@ static u8 sCraftPackupConfirmCallback(void)
 #undef CRAFT_QUANTITY
 
 
-static u8 WriteCraftMessageCallback(void)
-{
+static u8 WriteCraftMessageCallback(void){
+
     // True if text is still printing
     if (RunTextPrintersAndIsPrinter0Active() == TRUE)
-    {
         return CRAFT_MESSAGE_IN_PROGRESS;
-    }
     
     return sCraftDialogCallback();
 }
 
-static bool8 CraftStartConfirmCallback(void)
-{
-    switch (CraftMessage)
-    {
-    case CRAFT_PACKUP_CONFIRM:
-        sCraftDialogCallback = sCraftPackupConfirmCallback;
-        break;
-    case CRAFT_READY_CONFIRM:
-        sCraftDialogCallback = sCraftPackupConfirmCallback;
-        break;
+static bool8 CraftStartConfirmCallback(void){
+
+    switch (CraftMessage){
+
+        case CRAFT_PACKUP_CONFIRM:
+            sCraftDialogCallback = sCraftPackupConfirmCallback;
+            break;
+        case CRAFT_READY_CONFIRM:
+            sCraftDialogCallback = sCraftPackupConfirmCallback;
+            break;
     }
 
     gMenuCallback = CraftConfirmCallback;
@@ -1439,24 +1428,25 @@ static bool8 CraftStartConfirmCallback(void)
 
 static bool8 CraftConfirmCallback(void){
         
-    switch (WriteCraftMessageCallback())
-    {
-    case CRAFT_MESSAGE_IN_PROGRESS:
-        return FALSE;
-    case CRAFT_MESSAGE_CONFIRM:
-        switch (CraftMessage)
-        {
-        case CRAFT_PACKUP_CONFIRM:
-            PlaySE(SE_WIN_OPEN);
-            HideCraftMenu();
-            return TRUE;
-        case CRAFT_READY_CONFIRM:
-            CraftReturnToTableFromDialogue();
-            break;
-        }
-    case CRAFT_MESSAGE_CANCEL:
-        gMenuCallback = HandleCraftMenuInput;
-        return FALSE;
+    switch (WriteCraftMessageCallback()){
+
+        case CRAFT_MESSAGE_IN_PROGRESS:
+            return FALSE;
+        case CRAFT_MESSAGE_CONFIRM:
+
+            switch (CraftMessage){
+
+                case CRAFT_PACKUP_CONFIRM:
+                    PlaySE(SE_WIN_OPEN);
+                    HideCraftMenu();
+                    return TRUE;
+                case CRAFT_READY_CONFIRM:
+                    CraftReturnToTableFromDialogue();
+                    break;
+            }
+        case CRAFT_MESSAGE_CANCEL:
+            gMenuCallback = HandleCraftMenuInput;
+            return FALSE;
     }
 
     return FALSE;
@@ -1464,11 +1454,6 @@ static bool8 CraftConfirmCallback(void){
 
 static u8 CraftDialoguePackUp(void){
 
-    //if (JOY_NEW(A_BUTTON) || JOY_NEW(B_BUTTON)){
-        ClearDialogWindowAndFrame(0, TRUE);
-        return CRAFT_MESSAGE_CONFIRM;
-    //}
-
-    //return CRAFT_MESSAGE_IN_PROGRESS;
+    ClearDialogWindowAndFrame(0, TRUE);
+    return CRAFT_MESSAGE_CONFIRM;
 }
-

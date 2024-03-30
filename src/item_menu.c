@@ -343,7 +343,7 @@ static const u8 sContextMenuItems_QuizLady[] = {
     ACTION_CONFIRM_QUIZ_LADY, ACTION_CANCEL
 };
 
-static const TaskFunc sContextMenuFuncs[] = { //craft
+static const TaskFunc sContextMenuFuncs[] = {
     [ITEMMENULOCATION_FIELD] =                  Task_ItemContext_Normal,
     [ITEMMENULOCATION_BATTLE] =                 Task_ItemContext_Normal,
     [ITEMMENULOCATION_PARTY] =                  Task_ItemContext_GiveToParty,
@@ -760,7 +760,7 @@ static bool8 SetupBagMenu(void)
         gMain.state++;
         break;
     case 14:
-        taskId = CreateBagInputHandlerTask(gBagPosition.location); //craft
+        taskId = CreateBagInputHandlerTask(gBagPosition.location);
         gTasks[taskId].tListTaskId = ListMenuInit(&gMultiuseListMenuTemplate, gBagPosition.scrollPosition[gBagPosition.pocket], gBagPosition.cursorPosition[gBagPosition.pocket]);
         gTasks[taskId].tNeverRead = 0;
         gTasks[taskId].tItemCount = 0;
@@ -864,7 +864,7 @@ static u8 CreateBagInputHandlerTask(u8 location)
     if (location == ITEMMENULOCATION_WALLY)
         taskId = CreateTask(Task_WallyTutorialBagMenu, 0);
     else
-        taskId = CreateTask(Task_BagMenu_HandleInput, 0); //craft... this is returned to item startup task
+        taskId = CreateTask(Task_BagMenu_HandleInput, 0);
     return taskId;
 }
 
@@ -922,8 +922,8 @@ static u32 IsOnCraftTable(u16 itemId){
 
     u32 i;
 
-    for (i = 0; i < 4; i++)
-    {
+    for (i = 0; i < 4; i++){
+        
         if (sCurrentCraftTableItems[i][0] == itemId)
             return i + 1;
     }
@@ -1272,6 +1272,7 @@ static void Task_BagMenu_HandleInput(u8 taskId)
     s32 listPosition;
 
     if (gBagPosition.location == ITEMMENULOCATION_CRAFT){
+        
         struct ListMenu *list = (void *) gTasks[tListTaskId].data;
         tItemCount = 1;
         gSpecialVar_ItemId = BagGetItemIdByPocketPosition(gBagPosition.pocket + 1, list->template.items[list->scrollOffset + list->selectedRow].id);
@@ -1300,42 +1301,25 @@ static void Task_BagMenu_HandleInput(u8 taskId)
                         return;
                     }
                 }
-                /*if (gBagPosition.location == ITEMMENULOCATION_CRAFT){
-                    
-                    struct ListMenu *list = (void *) gTasks[tListTaskId].data;
-                    tItemCount = 1;
-                    gSpecialVar_ItemId = BagGetItemIdByPocketPosition(gBagPosition.pocket + 1, list->template.items[list->scrollOffset + list->selectedRow].id);
-
-                    if (IsOnCraftTable(gSpecialVar_ItemId) > 0){
-                
-                        sCurrentCraftTableItems[IsOnCraftTable(gSpecialVar_ItemId) - 1][0] = ITEM_NONE;
-
-                        AddBagItem(gSpecialVar_ItemId, 1);
-                        tItemCount = 0;
-                        Task_RemoveItemFromBag(taskId);
-                        break;
-                    }
-                    else if (CanCraftItem(taskId) && CheckForCraftSpace(taskId) > 0)
-                    {
-                        sCurrentCraftTableItems[CheckForCraftSpace(taskId) - 1][0] = gSpecialVar_ItemId;
-                        Task_RemoveItemFromBag(taskId);                
-                    }    
-                    return;
-                }*/
             }
-
+            //Craft Menu
             if ((JOY_HELD(SELECT_BUTTON) && JOY_NEW(A_BUTTON)) && CanCraftItem(taskId) && CheckForCraftSpace(taskId) > 0){
                 
                 sCurrentCraftTableItems[CheckForCraftSpace(taskId) - 1][0] = gSpecialVar_ItemId;
                 Task_RemoveItemFromBag(taskId);                    
                 return;
             }
-            if ((JOY_HELD(SELECT_BUTTON) && JOY_NEW(B_BUTTON)) && IsOnCraftTable(gSpecialVar_ItemId) > 0){
+            if ((JOY_HELD(SELECT_BUTTON) && JOY_NEW(B_BUTTON))){
 
-                sCurrentCraftTableItems[IsOnCraftTable(gSpecialVar_ItemId) - 1][0] = ITEM_NONE;
-                AddBagItem(gSpecialVar_ItemId, 1);
-                tItemCount = 0;
-                Task_RemoveItemFromBag(taskId);
+                if (IsOnCraftTable(gSpecialVar_ItemId) > 0){
+
+                    sCurrentCraftTableItems[IsOnCraftTable(gSpecialVar_ItemId) - 1][0] = ITEM_NONE;
+                    AddBagItem(gSpecialVar_ItemId, 1);
+                    tItemCount = 0;
+                    Task_RemoveItemFromBag(taskId);
+                }
+                else
+                    DisplayItemMessage(taskId, FONT_NORMAL, gText_NoItems, CloseItemMessage);
                 return;
             }
             break;
@@ -1361,6 +1345,7 @@ static void Task_BagMenu_HandleInput(u8 taskId)
             PlaySE(SE_SELECT);
             gSpecialVar_ItemId = BagGetItemIdByPocketPosition(gBagPosition.pocket + 1, listPosition);
             
+            //Craft Menu
             if (!CanCraftItem(taskId) || JOY_HELD(SELECT_BUTTON))                
                 break;
             if ((sCurrentCraftTableItems[sCraftMenuCursorPos][0] != ITEM_NONE && sCurrentCraftTableItems[sCraftMenuCursorPos][0] != gSpecialVar_ItemId)){
@@ -1372,7 +1357,7 @@ static void Task_BagMenu_HandleInput(u8 taskId)
             BagMenu_PrintCursor(tListTaskId, COLORID_GRAY_CURSOR);
             tListPosition = listPosition;
             tQuantity = BagGetQuantityByPocketPosition(gBagPosition.pocket + 1, listPosition);
-            sContextMenuFuncs[gBagPosition.location](taskId); //craft
+            sContextMenuFuncs[gBagPosition.location](taskId);
             break;
         }
     }
@@ -1638,8 +1623,8 @@ static u32 CheckForCraftSpace(u8 taskId){
 
     u32 i;
 
-    for (i = 0; i < 4; i++)
-    {
+    for (i = 0; i < 4; i++){
+
         if (sCurrentCraftTableItems[i][0] == ITEM_NONE){
             return i + 1;
         }
@@ -1653,17 +1638,17 @@ static bool32 CanCraftItem(u8 taskId)
 {
     if (gBagPosition.location == ITEMMENULOCATION_CRAFT && 
         (gBagPosition.pocket == KEYITEMS_POCKET || !IsHoldingItemAllowed(gSpecialVar_ItemId) ||
-        gBagPosition.pocket == TMHM_POCKET))
-    {
-        gSpecialVar_ItemId = ITEM_NONE;
-        DisplayItemMessage(taskId, FONT_NORMAL, gText_DadsAdvice, CloseItemMessage);
-        return FALSE;
+        gBagPosition.pocket == TMHM_POCKET)){
+
+            gSpecialVar_ItemId = ITEM_NONE;
+            DisplayItemMessage(taskId, FONT_NORMAL, gText_DadsAdvice, CloseItemMessage);
+            return FALSE;
     }
     else
-        return TRUE;
+            return TRUE;
 }
 
-static void OpenContextMenu(u8 taskId) //craft - use for after clicking on item
+static void OpenContextMenu(u8 taskId)
 {
     switch (gBagPosition.location)
     {
@@ -1786,9 +1771,9 @@ static void OpenContextMenu(u8 taskId) //craft - use for after clicking on item
         PutWindowTilemap(WIN_TMHM_INFO);
         ScheduleBgCopyTilemapToVram(0);
     }
-    else //craft - win_description is the little side window under backpack graphic
+    else
     {
-        CopyItemName(gSpecialVar_ItemId, gStringVar1); //itemId -> str var 1 -> gText -> str var 4 - > print
+        CopyItemName(gSpecialVar_ItemId, gStringVar1);
         StringExpandPlaceholders(gStringVar4, gText_Var1IsSelected);
         FillWindowPixelBuffer(WIN_DESCRIPTION, PIXEL_FILL(0)); 
         BagMenu_Print(WIN_DESCRIPTION, FONT_NORMAL, gStringVar4, 3, 1, 0, 0, 0, COLORID_NORMAL);
@@ -1809,13 +1794,13 @@ static void PrintContextMenuItems(u8 windowId)
     InitMenuInUpperLeftCornerNormal(windowId, gBagMenu->contextMenuNumItems, 0);
 }
 
-static void PrintContextMenuItemGrid(u8 windowId, u8 columns, u8 rows) //craft
+static void PrintContextMenuItemGrid(u8 windowId, u8 columns, u8 rows)
 {
     PrintMenuActionGrid(windowId, FONT_NARROW, 8, 1, 56, columns, rows, sItemMenuActions, gBagMenu->contextMenuItemsPtr);
     InitMenuActionGrid(windowId, 56, columns, rows, 0);
 }
 
-static void Task_ItemContext_Normal(u8 taskId) //craft - after clicking A, decides context and goes here usually
+static void Task_ItemContext_Normal(u8 taskId)
 {
     OpenContextMenu(taskId);
 
@@ -1848,7 +1833,7 @@ static void Task_ItemContext_SingleRow(u8 taskId)
     }
 }
 
-static void Task_ItemContext_MultipleRows(u8 taskId) //craft - copy this biz
+static void Task_ItemContext_MultipleRows(u8 taskId)
 {
     if (MenuHelpers_ShouldWaitForLinkRecv() != TRUE)
     {
@@ -2118,7 +2103,7 @@ static void ItemMenu_Cancel(u8 taskId)
     ScheduleBgCopyTilemapToVram(0);
     ScheduleBgCopyTilemapToVram(1);
     BagMenu_PrintCursor(tListTaskId, COLORID_NORMAL);
-    ReturnToItemList(taskId); //craft
+    ReturnToItemList(taskId);
 }
 
 static void ItemMenu_UseInBattle(u8 taskId)
