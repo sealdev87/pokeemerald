@@ -41,6 +41,34 @@
 //Lunos: ChooseItem
 //MrGriffin: example-screen
 //Ghoulslash: item icons
+//--------------------------------------------------------------------------------------------------------------
+
+// Ingredients (ITEM_1234) must be arranged with Smallest -> Largest ItemId. You can edit this for specific-order
+// crafting a la minecraft if you comment out the OrganizeCraftItems call down FindCraftProduct
+// Follow the template & examples below to add more recipes!
+static const u16 Craft_Recipes[][6] = {
+//  {ITEM_1,        ITEM_2,            ITEM_3,            ITEM_4,             ||||  CRAFT_PRODUCT,          QUANTITY},    
+    {0,             0,                 ITEM_POTION,       ITEM_PECHA_BERRY,         ITEM_ANTIDOTE,         3},
+    {0,             ITEM_REPEL,        ITEM_REPEL,        ITEM_REPEL,               ITEM_SUPER_REPEL,      2},
+    {0,             ITEM_SUPER_REPEL,  ITEM_SUPER_REPEL,  ITEM_SUPER_REPEL,         ITEM_MAX_REPEL,        2},
+    {0,             0,                 ITEM_POKE_BALL,    ITEM_MAX_REPEL,           ITEM_SMOKE_BALL,       1},
+    {0,             0,                 ITEM_ORAN_BERRY,   ITEM_ORAN_BERRY,          ITEM_BERRY_JUICE,      1}
+};
+
+// Here's some flags in case you want to lock away an item due to plot progression,
+// If you want less than three just put TRUE
+static const u32 Craft_Flags[][4] = {
+    //{CRAFT PRODUCT, ||||  FLAG 1,                        FLAG 2,                         FLAG 3},
+    {ITEM_BERRY_JUICE,      FLAG_VISITED_PETALBURG_CITY,   FLAG_ITEM_ROUTE_102_POTION,     TRUE}
+};
+
+//--------------------------------------------------------------------------------------------------------------
+// The rest of the code is below!
+// Modify it if you like, and if you make improvements please
+// submit a pull request so I can add it. Sharing is caring :D
+// Also please do a PR if you find bugs or something that doesn't look
+// intentional.
+// Thx! redsquidz くコ:彡
 
 // Menu actions
 enum CraftMenuActions {
@@ -135,22 +163,13 @@ static bool8 HandleCraftMenuInput(void);
 static void CraftMenuTask(u8 taskId);
 static bool8 FieldCB_ReturnToFieldCraftMenu(void);
 
-static const u16 Craft_Recipes[][6] = {
-// Ingredients (ITEM_1234) must be arranged with Smallest -> Largest ItemId
-//  {ITEM_1,        ITEM_2,            ITEM_3,            ITEM_4,            ITEM_PRODUCT,   QUANTITY},    
-    {0,             0,                 ITEM_POTION,       ITEM_PECHA_BERRY,  ITEM_ANTIDOTE,         3},
-    {0,             ITEM_REPEL,        ITEM_REPEL,        ITEM_REPEL,        ITEM_SUPER_REPEL,      2},
-    {0,             ITEM_SUPER_REPEL,  ITEM_SUPER_REPEL,  ITEM_SUPER_REPEL,  ITEM_MAX_REPEL,        2},
-    {0,             0,                 ITEM_POKE_BALL,    ITEM_MAX_REPEL,    ITEM_SMOKE_BALL,       1},
-    {0,             0,                 ITEM_ORAN_BERRY,   ITEM_ORAN_BERRY,   ITEM_BERRY_JUICE,      1}
-};
-
 //Strings
 static const u8 sText_Ready[] = _("READY");
 static const u8 sText_ConfirmPackUp[] = _("Would you like to pack up?");
 static const u8 sText_ConfirmReady[] = _("This looks like it'll be good.\nCraft {STR_VAR_1}{STR_VAR_2}?");
 static const u8 sText_ConfirmReadyQty[] = _(" {COLOR GREEN}{SHADOW LIGHT_GREEN}({STR_VAR_1}){COLOR DARK_GRAY}{SHADOW LIGHT_GRAY}");
 static const u8 sText_CraftNo[] = _("Hmm, this won't make anything useful...");
+static const u8 sText_NotReadyToCraft[] = _("Hmm, this still needs something...");
 static const u8 sText_WouldYouLikeToCraft[] = _("There's a crafting table.\nWant to craft something?");
     //each item should get array w craftinprocess messages & requirements (indoors or heat/water/spice/tools/ice)
 static const u8 sText_CraftInProcess[] = _("Prepping ingredients... {PAUSE 25}Assembling...\n{PAUSE 25}Finishing up{PAUSE 25}.{PAUSE 25}.{PAUSE 25}.{PAUSE 25}\p{PAUSE_MUSIC}{PLAY_BGM MUS_OBTAIN_ITEM}Item crafted!{RESUME_MUSIC}\p{PLAYER} put away the {STR_VAR_1}\nin the {STR_VAR_2} pocket.{PAUSE_UNTIL_PRESS}");
@@ -279,7 +298,7 @@ static void Task_CreateCraftMenu(TaskFunc followupFunc);
 
 //Menu / Window Functions
 static void BuildCraftTableActions(void){
-    u8 i;
+    u32 i;
 
     //Stores action per item. 
     for (i = 0; i < 4; i++){
@@ -294,46 +313,40 @@ static void BuildCraftTableActions(void){
 
 }
 
-static void ShowCraftTableWindow(void)
-{
-    //sCraftTableWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_TABLE]);
+static void ShowCraftTableWindow(void){
+
     PutWindowTilemap(sCraftTableWindowId);
     DrawStdWindowFrame(sCraftTableWindowId, FALSE);
     CopyWindowToVram(sCraftTableWindowId, COPYWIN_GFX);
 }
 
-static void ShowCraftInfoWindow(void)
-{
-    //sCraftInfoWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_INFO]);
-    
-    
+static void ShowCraftInfoWindow(void){
+ 
     PutWindowTilemap(sCraftInfoWindowId);
     DrawStdWindowFrame(sCraftInfoWindowId, FALSE);
-    //ConvertIntToDecimalStringN(gStringVar1, gNumSafariBalls, STR_CONV_MODE_RIGHT_ALIGN, 2);
-    //StringExpandPlaceholders(gStringVar4, gText_SafariBallStock);
-    //AddTextPrinterParameterized(sCraftInfoWindowId, FONT_NORMAL, gStringVar4, 0, 1, TEXT_SKIP_DRAW, NULL);
     CopyWindowToVram(sCraftInfoWindowId, COPYWIN_GFX);
 }
 
-static void PrintOptionsMenuGrid(u8 windowId, u8 columns, u8 rows)
-{
+static void PrintOptionsMenuGrid(u8 windowId, u8 columns, u8 rows){
+
     PrintMenuActionGrid(windowId, FONT_NORMAL, 8, 1, 56, columns, rows, sCraftOptionsActions, sCraftOptionsActions_List);
     InitMenuActionGrid(windowId, 56, columns, rows, 0);
 }
 
-static void ShowCraftOptionsWindow(void)
-{
-    ClearStdWindowAndFrame(sCraftOptionsWindowId, TRUE); //need to clear it first, otherwise only partially fills
+static void ShowCraftOptionsWindow(void){
+
+    //clear junk first
+    ClearStdWindowAndFrame(sCraftOptionsWindowId, TRUE);
     
     FillWindowPixelBuffer(sCraftOptionsWindowId, PIXEL_FILL(0));
     DrawStdWindowFrame(sCraftOptionsWindowId, FALSE);
     PrintOptionsMenuGrid(sCraftOptionsWindowId, 2, 2);
     
-    //PutWindowTilemap(sCraftOptionsWindowId);
     ScheduleBgCopyTilemapToVram(0);
 }
 
 static void ShowCraftTableAndInfoWindows(void){
+
     ShowCraftTableWindow();
     ShowCraftInfoWindow();
 }
@@ -347,21 +360,15 @@ static void LoadCraftWindows(void){
 
     //Ready/Options
     sCraftOptionsWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_OPTIONS]);
-
-
 }
 
 static const u8 *GetCraftTableItemName(u16 itemId){
-    //Print filters for item names. GetFacilityCancelString makes the function a pointer so ¯\_(ツ)_/¯
 
+    //Print filters for item names. GetFacilityCancelString makes the function a pointer so ¯\_(ツ)_/¯
     if(itemId == ITEM_NONE || itemId >= ITEMS_COUNT)
-    {
         return gText_Dash;
-    }
     else
-    {
         return ItemId_GetName(itemId);
-    }
 }
 
 static void RemoveExtraCraftMenuWindows(void)
@@ -373,56 +380,48 @@ static void PrintCraftTableItems(void){
     //Modified from PrintMenuGridTable
     u32 i, j;
 
-    for (i = 0; i < 2; i++)
-    {
+    for (i = 0; i < 2; i++){
         for (j = 0; j < 2; j++)
             AddTextPrinterParameterized(sCraftTableWindowId, 7,
-                GetCraftTableItemName(sCurrentCraftTableItems[(i * 2) + j][CRAFT_TABLE_ITEM]),
-                (9*8 * j) + 8, (i * 16) + 1, TEXT_SKIP_DRAW, NULL);
+             GetCraftTableItemName(sCurrentCraftTableItems[(i * 2) + j][CRAFT_TABLE_ITEM]),
+             (9*8 * j) + 8, (i * 16) + 1, TEXT_SKIP_DRAW, NULL);
     }
 
 }
 
-static bool32 InitCraftMenuStep(void)
-{
+static bool32 InitCraftMenuStep(void){
+
     //list items, draw window, check for extra windows, print menu actions, place cursor, draw everything
     s8 state = sInitCraftMenuData[0];
 
-    switch (state)
-    {
-    case 0:
-        sInitCraftMenuData[0]++;
-        break;
-    case 1:
-        BuildCraftTableActions(); //update to list blank/item. Old function checks what kind of menu,
-                                 //adds items based on flags, then adds each one w/ appendtolist
-                                 //uses sCurrentStartMenuActions, sNumStartMenuActions
-        InitItemSprites();
-        sInitCraftMenuData[0]++;
-        break;
-    case 2:
-        LoadMessageBoxAndBorderGfx();
-        LoadCraftWindows();
-        sInitCraftMenuData[0]++;
-        break;
-    case 3:
-        // if (GetSafariZoneFlag()) //update to sous chefs??
-        //     ShowSafariBallsWindow();
-        // if (InBattlePyramid())
-        //     ShowPyramidFloorWindow();
-        ShowCraftTableAndInfoWindows();
-        sInitCraftMenuData[0]++;
-        break;
-    case 4:
-        PrintCraftTableItems();
-        UpdateCraftInfoWindow();
-        sInitCraftMenuData[0]++;
-        break;
-    case 5:
-        sCraftMenuCursorPos = InitMenuGrid(sCraftTableWindowId, FONT_NARROW, 0, 1, 9 * 8, 15, 2, //9*8 from ScriptMenu_MultichoiceGrid, 15 from FONT_NARROW
-                                                2, 4, sCraftMenuCursorPos);
-        CopyWindowToVram(sCraftTableWindowId, COPYWIN_MAP);
-        return TRUE;
+    switch (state){
+        case 0:
+            sInitCraftMenuData[0]++;
+            break;
+        case 1:
+            BuildCraftTableActions();
+            InitItemSprites();
+            sInitCraftMenuData[0]++;
+            break;
+        case 2:
+            LoadMessageBoxAndBorderGfx();
+            LoadCraftWindows();
+            sInitCraftMenuData[0]++;
+            break;
+        case 3:
+            ShowCraftTableAndInfoWindows();
+            sInitCraftMenuData[0]++;
+            break;
+        case 4:
+            PrintCraftTableItems();
+            UpdateCraftInfoWindow();
+            sInitCraftMenuData[0]++;
+            break;
+        case 5:
+            sCraftMenuCursorPos = InitMenuGrid(sCraftTableWindowId, FONT_NARROW, 0, 1, 9 * 8, 15, 2, //9*8 from ScriptMenu_MultichoiceGrid, 15 from FONT_NARROW
+                                                    2, 4, sCraftMenuCursorPos);
+            CopyWindowToVram(sCraftTableWindowId, COPYWIN_MAP);
+            return TRUE;
     }
 
     return FALSE;
@@ -548,6 +547,26 @@ static void UpdateCraftInfoWindow(void){
     PutWindowTilemap(sCraftInfoWindowId);
     CopyWindowToVram(sCraftInfoWindowId, COPYWIN_GFX);
     ScheduleBgCopyTilemapToVram(0);
+}
+
+static void RestockCraftTable(void){
+    u32 i;
+    u16 CraftItem;
+
+    //reset cursor position
+    sCraftMenuCursorPos = 0;
+
+    //same as ClearCraftTable, but keeps items if there's still some left in the bag
+    for (i = 0; i < 4; i++){
+        CraftItem = sCurrentCraftTableItems[i][CRAFT_TABLE_ITEM];
+
+        if (!CheckBagHasItem(CraftItem, 0)){
+            sCurrentCraftTableItems[i][CRAFT_TABLE_ITEM] = ITEM_NONE;
+            sCurrentCraftTableItems[i][CRAFT_TABLE_ACTION] = TABLE_ACTION_BLANK;
+        }
+        else
+            RemoveBagItem(CraftItem, 1);
+    }
 }
 
 static void ClearCraftTable(void){
@@ -676,28 +695,10 @@ static bool8 IsCraftTableEmpty(void){
 
 static bool8 HandleCraftMenuInput(void)
 {
-    /*update info window with every cursor move (item: xQty in Bag & str to craft, blank: A to add item & "items ? str to craft : B to leave")
-      if clicking on something, either add or show options
-      
-      options = SWAP/READY/BAG/CANCEL
-      swap - get different item, ready - check craft recipe, bag - remove item, cancel - close options (update info window!)
-      ready: Want to craft this item? YES/NO
-      
-      Crafting... mixing... combining... item obtained!
-      
-      packup: Pack up items? YES/NO
-      Item4 -> blank, item3 -> blank, item2 -> blank, item1 -> blank, exit
-      
-      Select for secret recipe book? Or add to options once flagged
-      
-      soux chefs: charmander, squirtle, bulbasaur, aron, snorunt (heat, water, spices, salt/tools, ice)
-    */
-
     u8 OptionsCursorPos;
     u8 OldPos;
 
     OldPos = sCraftMenuCursorPos;
-
 
     switch(sCraftState)
     {
@@ -749,17 +750,17 @@ static bool8 HandleCraftMenuInput(void)
             }
             
             return FALSE;
-            //PlaySE(SE_SELECT);
-            //gMenuCallback = CraftMenuReadyCallback; //set up yes/no window
         }
 
         //select button, instant addswap item (or recipe book??)
+        /*
         if (JOY_NEW(SELECT_BUTTON))
         {
             PlaySE(SE_WIN_OPEN);
             ShowCraftOptionsWindow();
             sCraftState = STATE_OPTIONS_INPUT;
         }
+        */
 
         if (JOY_NEW(B_BUTTON)) //If !IsCraftTableEmpty then gmenucallback = CraftMenuPackUpCallback, otherwise just quit
         {
@@ -774,21 +775,8 @@ static bool8 HandleCraftMenuInput(void)
             CraftMessage = CRAFT_PACKUP_CONFIRM;
             gMenuCallback = CraftStartConfirmCallback; //let the gMenu pinball begin
             
-            //RemoveExtraCraftMenuWindows(); //if safarizone/battlepyramid flags, remove those windows. In this case,
-                                             //it'd be sous chefs 
-            //HideCraftMenu();
-            //return True;
             return FALSE;
         }
-
-        //if (sCraftMenuCursorPos != OldPos)
-        /*{
-            if (sCurrentCraftTableItems[OldPos][CRAFT_TABLE_ITEM] && sCurrentCraftTableItems[OldPos][CRAFT_TABLE_ITEM] < ITEMS_COUNT)
-                DestroyItemIconSprite();
-
-            UpdateCraftInfoWindow();
-        //}
-            */
 
             ClearCraftInfo(OldPos);
             UpdateCraftInfoWindow();
@@ -796,22 +784,6 @@ static bool8 HandleCraftMenuInput(void)
         return FALSE;
 
     case STATE_OPTIONS_INPUT:
-        /*How the ITEM MENU works:
-          gray cursor in item list
-          gspecialvar_itemId
-          open context menu
-                ask what you wanna do with var_itemid
-                print options grid
-          taskid = which grid format handling?
-          ACTION_CANCEL
-                remove window
-                reprint desc
-                black cursor
-                return to item list handling
-                        refresh graphics
-                        taskid = bag handling
-        */
-
         OptionsCursorPos = Menu_GetCursorPos();
 
         if (JOY_NEW(DPAD_UP))
@@ -870,12 +842,6 @@ static bool8 HandleCraftMenuInput(void)
                 break;
             }
 
-            //gMenuCallback = 
-            //sCraftOptionsActions[sCraftOptionsActions_List[OptionsCursorPos]].func.void_u8;
-
-            //if (gMenuCallback == CraftMenuAddSwapCallback)
-            //    FadeScreen(FADE_TO_BLACK, 0); 
-
             return FALSE;
         }
         else if (JOY_NEW(B_BUTTON)){
@@ -906,9 +872,7 @@ static void CraftMenu_PrintCursorAtPos(u8 cursorPos, u8 colorIndex){
     if (cursorPos > 1)
         y = 16;
 
-    //if (colorIndex == COLORID_NONE)
     FillWindowPixelRect(sCraftTableWindowId, PIXEL_FILL(TEXT_COLOR_WHITE), 0, y, GetMenuCursorDimensionByFont(FONT_NORMAL, 0), GetMenuCursorDimensionByFont(FONT_NORMAL, 1));
-    //BagMenu_Print(WIN_ITEM_LIST, FONT_NORMAL, gText_SelectorArrow2, 0, y, 0, 0, 0, colorIndex);
     AddTextPrinterParameterized4(sCraftTableWindowId, FONT_NORMAL, x, y, 0, 0, sTextColorTable[colorIndex], 0, gText_SelectorArrow2);
 }
 
@@ -922,6 +886,33 @@ static bool8 CraftMenuItemOptionsCallback(void){
 
     return FALSE;
 }
+
+// Watch out, code-explorer... from here on is some wip stuff where I tried to do an animation
+// for the packup table unloading and am thus far unsuccessful
+// Some of this stuff may be confusing to trace through. Keep in mind
+// a lot of this is copied from the start menu (if you haven't already guessed)
+// which in itself is a bit of a head-scratcher.
+// Add my 80% efforts and additions on top of that and, well, there be monsters...
+/*
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡠⠔⠒⠒⠠⠄⢠
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⣁⠴⠛⠋⠀⠀⡎
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠔⠉⠀⠀⠀⠀⡎⠰⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠜⠁⠀⠀⠀⠀⠀⡼⠒⠁⠀
+⠀⠀⠀⠀⣀⢀⡀⠀⠀⠀⠀⠀⠀⠀⢀⣶⡓⠀⠀⠀⠀⠀⢀⠜⠀⠀⠀⠀
+⠀⠀⢠⣪⠖⠒⢮⣢⠀⠀⠀⠀⡠⢊⢕⣢⡌⢦⠀⢤⣠⠔⠁⠀⠀⠀⠀⠀
+⢳⣴⠷⠃⠔⣒⠚⠇⡢⠠⠤⠺⠃⠘⢞⣋⠅⢠⠧⠊⠁⠀⠀⠀⠀⠀⠀⠀
+⡀⠀⣔⣕⣁⣤⣬⢦⣤⣭⠤⢂⡀⠀⣀⡀⠔⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠉⢋⡿⢛⣭⣴⣶⡿⢉⣤⣴⣿⠀⠁⡇⠀⢀⠠⠤⠀⠤⡀⠀⠀⠀⠀⠀⠀
+⠀⣮⠁⣾⠟⠉⠀⢰⡘⡿⠁⣿⣄⠣⡍⠉⠔⠊⠉⠉⢱⡼⠀⠀⠀⠀⠀⠀
+⠀⠿⠀⢹⠀⢀⣼⠟⠉⢊⠆⠻⣿⢓⠪⠥⡂⢄⠀⠀⢗⢅⣀⣀⡀⠀⠀⠀
+⠀⠘⡹⡉⠀⢸⣟⠀⢀⢜⠆⠀⠹⣻⢦⡀⠈⡄⡇⠀⠀⠉⠉⠉⠁⠀⠀⠀
+⠀⠀⠈⠺⢄⠀⠹⡆⠻⠁⠀⢀⡴⡹⠀⠻⣄⣽⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⢱⣜⣦⠀⠀⠀⢠⡗⠉⠀⠀⠀⢩⡌⠙⢳⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⢸⢽⣿⠀⠀⠀⠈⠓⠀⠀⠀⠀⢀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠫⣛⡄⠀⢀⢴⣾⣗⡶⢠⡴⠗⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠀⠈⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+*/
+// Ye be warned, code-explorer. Good luck! I'll let you know when you're back in safer waters.
 
 enum PackUpState {
     NO_ITEM,
@@ -987,11 +978,6 @@ static u8 CraftMenuPackUpCallback(void){
     //if (sPauseCounter-- > 0)
     //    return CRAFT_MESSAGE_IN_PROGRESS;
     
-
-
-
-
-
 
 //switch statement attempt 2    
 /*/    switch (CraftPackUpCheckItem())
@@ -1095,7 +1081,16 @@ static u8 CraftMenuPackUpCallback(void){
     */
 }
 
-
+// Okay, we're back to smooth sailing more or less.
+// There's one more tricky part at the end where
+// the start menu pretty much played dialogue pinball with the
+// "SaveDialogCallback" so you'll see some of that. (Actually it's more like the main callback plays ping pong with the dialogue check)
+// My biggest concern in this area is if anything gets leftover
+// from all the window switching and bugs start to appear
+// but everything looks okay so far from what testing I've done.
+// Again lmk if you have any pull requests!
+// Thanks for looking through :)
+// - redsquidz
 
 static void HideOptionsWindow(void){
 
@@ -1173,7 +1168,8 @@ static u8 CraftMenuReadyCallback(void){
     StringExpandPlaceholders(gStringVar4, sText_CraftInProcess);
     ShowCraftMessage(gStringVar4, CraftDialoguePackUp);
 
-    ClearCraftTable();
+    RestockCraftTable();
+    UpdateCraftTable();
 
     return CRAFT_MESSAGE_IN_PROGRESS;
 }
@@ -1270,6 +1266,34 @@ static u16 FindCraftProduct(int PrdOrQty){
     return CraftProduct;
 }
 
+static bool32 CheckCraftProductFlags(u16 itemId){
+
+    u32 i, ItemPos;
+    int FlagCount;
+
+    FlagCount = 3;
+
+    //search Craft_Flags for the product. If there's no item, there's no flags, so it passes.
+    for (i = 0; i == ARRAY_COUNT(Craft_Flags); i++){
+        if (Craft_Flags[i][0] == itemId){
+            ItemPos = i;
+            break;
+        }
+    }
+
+    if (i == ARRAY_COUNT(Craft_Flags))
+        return TRUE;
+
+    //Pass still uncertain. Check for flags.
+    for (i = 1; i > FlagCount; i++){
+        if (!FlagGet(Craft_Flags[ItemPos][i]))
+            return FALSE;
+    }
+
+    //Check passed
+    return TRUE;
+}
+
 static void InitItemSprites(void){
 
     //Peaches for my peach <3
@@ -1295,7 +1319,7 @@ static u8 CraftPackUpConfirmInputCallback(void){
 
             switch (CraftMessage){
 
-                case CRAFT_PACKUP_CONFIRM:
+                case CRAFT_PACKUP_CONFIRM: // You'll see some more attempts at the packup animation here
                     sCraftMenuCursorPos = 3;
                     sPauseCounter = 30;
                     //sCraftDialogCallback = CraftPackUpCheckDelay;
@@ -1355,12 +1379,12 @@ static u8 sCraftPackupConfirmCallback(void){
     const u8 *message;
     u16 CraftProduct, CraftQty;
 
-    CraftProduct = FindCraftProduct(CRAFT_PRODUCT);
-    CraftQty = FindCraftProduct(CRAFT_QUANTITY);
-
     HideCraftMenu();
     FreezeObjectEvents();
     LockPlayerFieldControls();
+
+    CraftProduct = FindCraftProduct(CRAFT_PRODUCT);
+    CraftQty = FindCraftProduct(CRAFT_QUANTITY);
 
     switch (CraftMessage){
 
@@ -1368,8 +1392,9 @@ static u8 sCraftPackupConfirmCallback(void){
             message = sText_ConfirmPackUp;
             break;
         case CRAFT_READY_CONFIRM:
-            if (CraftProduct != ITEM_NONE){
-
+            if (CraftProduct == ITEM_NONE)
+                message = sText_CraftNo;
+            else if(CheckCraftProductFlags(CraftProduct)){
                 //expand those placeholders
                 if (CraftQty > 1){
                     ConvertIntToDecimalStringN(gStringVar1, CraftQty, STR_CONV_MODE_LEFT_ALIGN, 2);
@@ -1384,7 +1409,7 @@ static u8 sCraftPackupConfirmCallback(void){
                 break;
             }
             else
-                message = sText_CraftNo;
+                message = sText_NotReadyToCraft;
 
             ShowCraftMessage(message, CraftMessageWaitForButtonPress);
             return CRAFT_MESSAGE_IN_PROGRESS;
