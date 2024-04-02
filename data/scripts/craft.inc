@@ -1,5 +1,6 @@
 Craft_EventScript_CraftTable::
     msgbox Text_CraftTable_WantToCraft, MSGBOX_YESNO
+    delay 2
     goto_if_eq VAR_RESULT, YES, Craft_UseCraftTable
     goto Craft_Cancel
     end

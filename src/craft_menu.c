@@ -43,9 +43,10 @@
 //Ghoulslash: item icons
 //--------------------------------------------------------------------------------------------------------------
 
-// Ingredients (ITEM_1234) must be arranged with Smallest -> Largest ItemId. You can edit this for specific-order
-// crafting a la minecraft if you comment out the OrganizeCraftItems call down FindCraftProduct
-// Follow the template & examples below to add more recipes!
+// Ingredients (ITEM_1234) must be arranged with Smallest -> Largest ItemId.
+// You can edit this for specific-order crafting à la minecraft
+// if you comment out the OrganizeCraftItems call down FindCraftProduct.
+// Otherwise just follow the template & examples below to add more recipes!
 static const u16 Craft_Recipes[][6] = {
 //  {ITEM_1,        ITEM_2,            ITEM_3,            ITEM_4,             ||||  CRAFT_PRODUCT,          QUANTITY},    
     {0,             0,                 ITEM_POTION,       ITEM_PECHA_BERRY,         ITEM_ANTIDOTE,         3},
@@ -56,11 +57,15 @@ static const u16 Craft_Recipes[][6] = {
 };
 
 // Here's some flags in case you want to lock away an item due to plot progression,
-// If you want less than three just put TRUE
-static const u32 Craft_Flags[][4] = {
+// If you want less than three just use this handy dandy NO_FLAG
+#define NO_FLAG 0x86F //Littleroot Flag, should always be true unless you're doing something cool
+
+static const u16 Craft_Flags[][4] = {
     //{CRAFT PRODUCT, ||||  FLAG 1,                        FLAG 2,                         FLAG 3},
-    {ITEM_BERRY_JUICE,      FLAG_VISITED_PETALBURG_CITY,   FLAG_ITEM_ROUTE_102_POTION,     TRUE}
+    {ITEM_BERRY_JUICE,      FLAG_VISITED_PETALBURG_CITY,   FLAG_ITEM_ROUTE_102_POTION,     NO_FLAG}
 };
+#undef NO_FLAG
+
 
 //--------------------------------------------------------------------------------------------------------------
 // The rest of the code is below!
@@ -1271,10 +1276,12 @@ static bool32 CheckCraftProductFlags(u16 itemId){
     u32 i, ItemPos;
     int FlagCount;
 
-    FlagCount = 3;
+    //This counts columns aka dimension 2, so -1 for flags since first column is the itemId.
+    //ARRAY_COUNT only does rows, where arr[0] = row and arr[0][0] = first element in row
+    FlagCount = sizeof(Craft_Flags[0])/sizeof(Craft_Flags[0][0]) - 1;
 
     //search Craft_Flags for the product. If there's no item, there's no flags, so it passes.
-    for (i = 0; i == ARRAY_COUNT(Craft_Flags); i++){
+    for (i = 0; i < ARRAY_COUNT(Craft_Flags); i++){
         if (Craft_Flags[i][0] == itemId){
             ItemPos = i;
             break;
@@ -1285,7 +1292,7 @@ static bool32 CheckCraftProductFlags(u16 itemId){
         return TRUE;
 
     //Pass still uncertain. Check for flags.
-    for (i = 1; i > FlagCount; i++){
+    for (i = 1; i < FlagCount + 1; i++){
         if (!FlagGet(Craft_Flags[ItemPos][i]))
             return FALSE;
     }
