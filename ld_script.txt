@@ -343,8 +343,6 @@ SECTIONS {
         src/gym_leader_rematch.o(.text);
         src/battle_transition_frontier.o(.text);
         src/international_string_util.o(.text);
-        src/sample_ui_start_here.o(.text);
-        src/sample_ui_sliding_panel.o(.text);
         src/craft_menu.o(.text);
     } =0
 
@@ -708,8 +706,6 @@ SECTIONS {
         data/mystery_gift.o(.rodata);
         src/m4a_tables.o(.rodata);
         data/sound_data.o(.rodata);
-        src/sample_ui_start_here.o(.rodata);
-        src/sample_ui_sliding_panel.o(.rodata);
         src/craft_menu.o(.rodata);
     } =0
 

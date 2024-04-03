@@ -94,8 +94,8 @@ static void DrawMultichoiceMenu(u8 left, u8 top, u8 multichoiceId, bool8 ignoreB
 {
     int i;
     u8 windowId;
-    u8 count = gMultichoiceLists[multichoiceId].count;
-    const struct MenuAction *actions = gMultichoiceLists[multichoiceId].list;
+    u8 count = sMultichoiceLists[multichoiceId].count;
+    const struct MenuAction *actions = sMultichoiceLists[multichoiceId].list;
     int width = 0;
     u8 newWidth;
 
@@ -263,22 +263,22 @@ bool8 ScriptMenu_MultichoiceGrid(u8 left, u8 top, u8 multichoiceId, bool8 ignore
         gSpecialVar_Result = 0xFF;
         width = 0;
 
-        for (i = 0; i < gMultichoiceLists[multichoiceId].count; i++)
+        for (i = 0; i < sMultichoiceLists[multichoiceId].count; i++)
         {
-            width = DisplayTextAndGetWidth(gMultichoiceLists[multichoiceId].list[i].text, width);
+            width = DisplayTextAndGetWidth(sMultichoiceLists[multichoiceId].list[i].text, width);
         }
 
         newWidth = ConvertPixelWidthToTileWidth(width);
 
         left = ScriptMenu_AdjustLeftCoordFromWidth(left, columnCount * newWidth);
-        rowCount = gMultichoiceLists[multichoiceId].count / columnCount;
+        rowCount = sMultichoiceLists[multichoiceId].count / columnCount;
 
         taskId = CreateTask(Task_HandleMultichoiceGridInput, 80);
 
         gTasks[taskId].tIgnoreBPress = ignoreBPress;
         gTasks[taskId].tWindowId = CreateWindowFromRect(left, top, columnCount * newWidth, rowCount * 2);
         SetStandardWindowBorderStyle(gTasks[taskId].tWindowId, FALSE);
-        PrintMenuGridTable(gTasks[taskId].tWindowId, newWidth * 8, columnCount, rowCount, gMultichoiceLists[multichoiceId].list);
+        PrintMenuGridTable(gTasks[taskId].tWindowId, newWidth * 8, columnCount, rowCount, sMultichoiceLists[multichoiceId].list);
         InitMenuActionGrid(gTasks[taskId].tWindowId, newWidth * 8, columnCount, rowCount, 0);
         CopyWindowToVram(gTasks[taskId].tWindowId, COPYWIN_FULL);
         return TRUE;

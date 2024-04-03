@@ -356,7 +356,6 @@ static const TaskFunc sContextMenuFuncs[] = {
     [ITEMMENULOCATION_APPRENTICE] =             Task_ItemContext_Normal,
     [ITEMMENULOCATION_WALLY] =                  NULL,
     [ITEMMENULOCATION_PCBOX] =                  Task_ItemContext_GiveToPC,
-    [ITEMMENULOCATION_CHOOSE_ITEM] =            Task_FadeAndCloseBagMenu,
     [ITEMMENULOCATION_CRAFT] =                  Task_FadeAndCloseBagMenu
 };
 
@@ -380,7 +379,7 @@ static const struct ScrollArrowsTemplate sBagScrollArrowsTemplate = {
 
 static const u8 sRegisteredSelect_Gfx[] = INCBIN_U8("graphics/bag/select_button.4bpp");
 
-static const u8 sText_CraftTableSwap[] = _("Swapping items{PAUSE 25}.{PAUSE 25}.{PAUSE 25}.");
+static const u8 sText_CraftTableSwap[] = _("Swapping items.{PAUSE 25}.{PAUSE 25}.");
 
 enum {
     COLORID_NORMAL,
@@ -643,8 +642,7 @@ void GoToBagMenu(u8 location, u8 pocket, void ( *exitCallback)())
             gBagPosition.exitCallback = exitCallback;
         if (pocket < POCKETS_COUNT)
             gBagPosition.pocket = pocket;
-        if (//gBagPosition.location == ITEMMENULOCATION_CHOOSE_ITEM ||
-            gBagPosition.location == ITEMMENULOCATION_BERRY_TREE ||
+        if (gBagPosition.location == ITEMMENULOCATION_BERRY_TREE ||
             gBagPosition.location == ITEMMENULOCATION_BERRY_BLENDER_CRUSH)
             gBagMenu->pocketSwitchDisabled = TRUE;
         gBagMenu->newScreenCallback = NULL;
@@ -874,12 +872,20 @@ static void AllocateBagItemListBuffers(void)
     sListBuffer2 = Alloc(sizeof(*sListBuffer2));
 }
 
-static void ColorMenuItemString(u8 *str, u8 colorIndex)
-{
+static void ColorBagItemString(u8 *dest, u8 colorIndex){
+    //if you squint at the math blame GF, check out ColorMenuItemString
+    
+    u8 *str;
+
+    str = gStringVar4;
     StringCopy(str, gText_Color161Shadow161);
     
     str[2] = sFontColorTable[colorIndex][1];
     str[5] = sFontColorTable[colorIndex][2];
+
+    str = StringLength(gStringVar4) + gStringVar4;
+    StringCopy(str, dest);
+    StringCopy(dest, gStringVar4);
 }
 
 static void LoadBagItemListBuffers(u8 pocketId)
@@ -955,15 +961,8 @@ static void GetItemName(s8 *dest, u16 itemId)
     case BERRIES_POCKET:
         ConvertIntToDecimalStringN(gStringVar1, itemId - FIRST_BERRY_INDEX + 1, STR_CONV_MODE_LEADING_ZEROS, 2);
         CopyItemName(itemId, gStringVar2);
-
-        if (gBagPosition.location == ITEMMENULOCATION_CRAFT && IsOnCraftTable(itemId) > 0){
-        
-            ColorMenuItemString(gStringVar4, COLORID_CRAFT);
-            str = StringLength(gStringVar4) + gStringVar4;
-            StringCopy(str, gStringVar2);
-            StringCopy(gStringVar2, gStringVar4);
-        }
-
+        if (gBagPosition.location == ITEMMENULOCATION_CRAFT && IsOnCraftTable(itemId))
+            ColorBagItemString(gStringVar2, COLORID_CRAFT);
         StringExpandPlaceholders(dest, gText_NumberItem_TMBerry);
         return;
     default:
@@ -971,13 +970,8 @@ static void GetItemName(s8 *dest, u16 itemId)
         break;
     }
 
-    if (gBagPosition.location == ITEMMENULOCATION_CRAFT && IsOnCraftTable(itemId) > 0){
-        
-        ColorMenuItemString(gStringVar4, COLORID_CRAFT);
-        str = StringLength(gStringVar4) + gStringVar4;
-        StringCopy(str, dest);
-        StringCopy(dest, gStringVar4);
-    }
+    if (gBagPosition.location == ITEMMENULOCATION_CRAFT && IsOnCraftTable(itemId))
+        ColorBagItemString(dest, COLORID_CRAFT);
 }
 
 static void BagMenu_MoveCursorCallback(s32 itemIndex, bool8 onInit, struct ListMenu *list)
@@ -1072,7 +1066,7 @@ static void BagMenu_PrintCursor(u8 listTaskId, u8 colorIndex)
     BagMenu_PrintCursorAtPos(ListMenuGetYCoordForPrintingArrowCursor(listTaskId), colorIndex);
 }
 
-static void BagMenu_PrintCursorAtPos(u8 y, u8 colorIndex) //craft
+static void BagMenu_PrintCursorAtPos(u8 y, u8 colorIndex)
 {
     if (colorIndex == COLORID_NONE)
         FillWindowPixelRect(WIN_ITEM_LIST, PIXEL_FILL(0), 0, y, GetMenuCursorDimensionByFont(FONT_NORMAL, 0), GetMenuCursorDimensionByFont(FONT_NORMAL, 1));
@@ -1309,7 +1303,7 @@ static void Task_BagMenu_HandleInput(u8 taskId)
                 Task_RemoveItemFromBag(taskId);                    
                 return;
             }
-            if ((JOY_HELD(SELECT_BUTTON) && JOY_NEW(B_BUTTON))){
+            if ((JOY_HELD(SELECT_BUTTON) && JOY_NEW(B_BUTTON) && CanCraftItem(taskId))){
 
                 if (IsOnCraftTable(gSpecialVar_ItemId) > 0){
 
@@ -1346,9 +1340,11 @@ static void Task_BagMenu_HandleInput(u8 taskId)
             gSpecialVar_ItemId = BagGetItemIdByPocketPosition(gBagPosition.pocket + 1, listPosition);
             
             //Craft Menu
-            if (!CanCraftItem(taskId) || JOY_HELD(SELECT_BUTTON))                
+            if (gBagPosition.location == ITEMMENULOCATION_CRAFT && (!CanCraftItem(taskId) || JOY_HELD(SELECT_BUTTON)))                
                 break;
-            if ((sCurrentCraftTableItems[sCraftMenuCursorPos][0] != ITEM_NONE && sCurrentCraftTableItems[sCraftMenuCursorPos][0] != gSpecialVar_ItemId)){
+            if ((sCurrentCraftTableItems[sCraftMenuCursorPos][0] != ITEM_NONE &&
+                    sCurrentCraftTableItems[sCraftMenuCursorPos][0] != gSpecialVar_ItemId) &&
+                    gBagPosition.location == ITEMMENULOCATION_CRAFT){
                 DisplayItemMessage(taskId, FONT_NORMAL, sText_CraftTableSwap, Task_FadeAndCloseBagMenu);
                 break;
             }
@@ -1636,13 +1632,16 @@ static u32 CheckForCraftSpace(u8 taskId){
 
 static bool32 CanCraftItem(u8 taskId)
 {
-    if (gBagPosition.location == ITEMMENULOCATION_CRAFT && 
-        (gBagPosition.pocket == KEYITEMS_POCKET || !IsHoldingItemAllowed(gSpecialVar_ItemId) ||
-        gBagPosition.pocket == TMHM_POCKET)){
+    if (gBagPosition.location != ITEMMENULOCATION_CRAFT)
+        return FALSE;
 
-            gSpecialVar_ItemId = ITEM_NONE;
-            DisplayItemMessage(taskId, FONT_NORMAL, gText_DadsAdvice, CloseItemMessage);
-            return FALSE;
+    if (gBagPosition.pocket == KEYITEMS_POCKET || 
+        !IsHoldingItemAllowed(gSpecialVar_ItemId) ||
+        gBagPosition.pocket == TMHM_POCKET)
+    {
+        gSpecialVar_ItemId = ITEM_NONE;
+        DisplayItemMessage(taskId, FONT_NORMAL, gText_DadsAdvice, CloseItemMessage);
+        return FALSE;
     }
     else
             return TRUE;
@@ -1705,7 +1704,6 @@ static void OpenContextMenu(u8 taskId)
             gBagMenu->contextMenuNumItems = ARRAY_COUNT(sContextMenuItems_Cancel);
         }
         break;
-    case ITEMMENULOCATION_CHOOSE_ITEM:
     case ITEMMENULOCATION_CRAFT:
     case ITEMMENULOCATION_PARTY:
     case ITEMMENULOCATION_SHOP:
@@ -1775,7 +1773,7 @@ static void OpenContextMenu(u8 taskId)
     {
         CopyItemName(gSpecialVar_ItemId, gStringVar1);
         StringExpandPlaceholders(gStringVar4, gText_Var1IsSelected);
-        FillWindowPixelBuffer(WIN_DESCRIPTION, PIXEL_FILL(0)); 
+        FillWindowPixelBuffer(WIN_DESCRIPTION, PIXEL_FILL(0));
         BagMenu_Print(WIN_DESCRIPTION, FONT_NORMAL, gStringVar4, 3, 1, 0, 0, 0, COLORID_NORMAL);
     }
     if (gBagMenu->contextMenuNumItems == 1)

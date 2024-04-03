@@ -535,7 +535,4 @@ gSpecials::
 	def_special RemoveRecordsWindow
 	def_special CloseDeptStoreElevatorWindow
 	def_special TrySetBattleTowerLinkType
-	def_special CraftMenu_Init
-	def_special ShowStartMenu
 	def_special ShowCraftMenu
-	def_special ChooseItemFromBag

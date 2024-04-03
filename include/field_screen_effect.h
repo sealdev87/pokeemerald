@@ -17,9 +17,7 @@ void FieldCB_DefaultWarpExit(void);
 void FieldCB_WarpExitFadeFromBlack(void);
 void FieldCB_WarpExitFadeFromWhite(void);
 bool8 FieldCB_ReturnToFieldOpenStartMenu(void);
-bool8 FieldCB_ReturnToField_OpenCraftMenu(void);
 void ReturnToFieldOpenStartMenu(void);
-void ReturnToField_OpenCraftMenu(void);
 void FieldCB_ReturnToFieldNoScript(void);
 void FieldCB_ReturnToFieldNoScriptCheckMusic(void);
 void DoWarp(void);
@@ -43,5 +41,8 @@ void DoOrbEffect(void);
 void FadeOutOrbEffect(void);
 void WriteFlashScanlineEffectBuffer(u8 flashLevel);
 bool8 IsPlayerStandingStill(void);
+bool8 FieldCB_ReturnToField_OpenCraftMenu(void);
+void ReturnToField_OpenCraftMenu(void);
+
 
 #endif // GUARD_FIELD_SCREEN_EFFECT_H

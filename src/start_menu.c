@@ -46,7 +46,6 @@
 #include "constants/battle_frontier.h"
 #include "constants/rgb.h"
 #include "constants/songs.h"
-#include "sample_ui.h"
 
 
 // Menu actions
@@ -64,8 +63,7 @@ enum
     MENU_ACTION_PLAYER_LINK,
     MENU_ACTION_REST_FRONTIER,
     MENU_ACTION_RETIRE_FRONTIER,
-    MENU_ACTION_PYRAMID_BAG,
-    MENU_ACTION_SAMPLE_UI
+    MENU_ACTION_PYRAMID_BAG
 };
 
 // Save status
@@ -114,7 +112,6 @@ static bool8 BattlePyramidRetireStartCallback(void);
 static bool8 BattlePyramidRetireReturnCallback(void);
 static bool8 BattlePyramidRetireCallback(void);
 static bool8 HandleStartMenuInput(void);
-static bool8 StartMenuSampleUiCallback(void);
 
 
 // Save dialog callbacks
@@ -159,8 +156,6 @@ static const u8 *const sPyramidFloorNames[FRONTIER_STAGES_PER_CHALLENGE + 1] =
 static const struct WindowTemplate sPyramidFloorWindowTemplate_2 = {0, 1, 1, 0xA, 4, 0xF, 8};
 static const struct WindowTemplate sPyramidFloorWindowTemplate_1 = {0, 1, 1, 0xC, 4, 0xF, 8};
 
-static const u8 sText_SampleUi[] = _("SAMPLEUI");
-
 static const struct MenuAction sStartMenuItems[] =
 {
     [MENU_ACTION_POKEDEX]         = {gText_MenuPokedex, {.u8_void = StartMenuPokedexCallback}},
@@ -175,8 +170,7 @@ static const struct MenuAction sStartMenuItems[] =
     [MENU_ACTION_PLAYER_LINK]     = {gText_MenuPlayer,  {.u8_void = StartMenuLinkModePlayerNameCallback}},
     [MENU_ACTION_REST_FRONTIER]   = {gText_MenuRest,    {.u8_void = StartMenuSaveCallback}},
     [MENU_ACTION_RETIRE_FRONTIER] = {gText_MenuRetire,  {.u8_void = StartMenuBattlePyramidRetireCallback}},
-    [MENU_ACTION_PYRAMID_BAG]     = {gText_MenuBag,     {.u8_void = StartMenuBattlePyramidBagCallback}},
-    [MENU_ACTION_SAMPLE_UI]       = {sText_SampleUi,    {.u8_void = StartMenuSampleUiCallback}}
+    [MENU_ACTION_PYRAMID_BAG]     = {gText_MenuBag,     {.u8_void = StartMenuBattlePyramidBagCallback}}
 };
 
 static const struct BgTemplate sBgTemplates_LinkBattleSave[] =
@@ -292,8 +286,6 @@ static void BuildStartMenuActions(void)
 
 static void AddStartMenuAction(u8 action)
 {
-    //sNumStartMenuActions++ with each action added. sCurrentStartMenuActions[index] has printed items
-    //action is the index of sStartMenuItems which is used in printstartmenuactions
     AppendToList(sCurrentStartMenuActions, &sNumStartMenuActions, action);
 }
 
@@ -314,7 +306,6 @@ static void BuildNormalStartMenu(void)
     {
         AddStartMenuAction(MENU_ACTION_POKENAV);
     }
-    AddStartMenuAction(MENU_ACTION_SAMPLE_UI);
     AddStartMenuAction(MENU_ACTION_PLAYER);
     AddStartMenuAction(MENU_ACTION_SAVE);
     AddStartMenuAction(MENU_ACTION_OPTION);
@@ -445,15 +436,14 @@ static bool32 PrintStartMenuActions(s8 *pIndex, u32 count)
         else
         {
             StringExpandPlaceholders(gStringVar4, sStartMenuItems[sCurrentStartMenuActions[index]].text);
-            AddTextPrinterParameterized(GetStartMenuWindowId(), 
-                FONT_NORMAL, gStringVar4, 8, (index << 4) + 9, TEXT_SKIP_DRAW, NULL);
+            AddTextPrinterParameterized(GetStartMenuWindowId(), FONT_NORMAL, gStringVar4, 8, (index << 4) + 9, TEXT_SKIP_DRAW, NULL);
         }
 
         index++;
         if (index >= sNumStartMenuActions)
         {
             *pIndex = index;
-            return TRUE; //done printing
+            return TRUE;
         }
 
         count--;
@@ -466,7 +456,6 @@ static bool32 PrintStartMenuActions(s8 *pIndex, u32 count)
 
 static bool32 InitStartMenuStep(void)
 {
-    //list actions, draw window, check for extra windows, print menu actions, place cursor, draw everything
     s8 state = sInitStartMenuData[0];
 
     switch (state)
@@ -548,7 +537,6 @@ void ShowReturnToFieldStartMenu(void)
 
 void Task_ShowStartMenu(u8 taskId)
 {
-                //pointer for global task location, data acts as state for switch
     struct Task *task = &gTasks[taskId];
 
     switch(task->data[0])
@@ -619,7 +607,7 @@ static bool8 HandleStartMenuInput(void)
     {
         RemoveExtraStartMenuWindows();
         HideStartMenu();
-        return TRUE; //sets gmenucallback to true, destroys task (see Task_showstartmenu above)
+        return TRUE;
     }
 
     return FALSE;
@@ -663,7 +651,7 @@ static bool8 StartMenuBagCallback(void)
         PlayRainStoppingSoundEffect();
         RemoveExtraStartMenuWindows();
         CleanupOverworldWindowsAndTilemaps();
-        SetMainCallback2(CB2_BagMenuFromStartMenu); //craft go to bag menu
+        SetMainCallback2(CB2_BagMenuFromStartMenu); // Display bag menu
 
         return TRUE;
     }
@@ -712,7 +700,7 @@ static bool8 StartMenuSaveCallback(void)
     if (InBattlePyramid())
         RemoveExtraStartMenuWindows();
 
-    gMenuCallback = SaveStartCallback; //craft Display save menu
+    gMenuCallback = SaveStartCallback;
 
     return FALSE;
 }
@@ -795,7 +783,7 @@ static bool8 StartMenuBattlePyramidBagCallback(void)
     return FALSE;
 }
 
-static bool8 SaveStartCallback(void) //craft
+static bool8 SaveStartCallback(void)
 {
     InitSave();
     gMenuCallback = SaveCallback;
@@ -865,7 +853,7 @@ static bool8 BattlePyramidRetireCallback(void)
 
 static void InitSave(void)
 {
-    SaveMapView(); //Camera position for Continue on startup menu screen
+    SaveMapView(); // Camera position for Continue on startup menu screen
     sSaveDialogCallback = SaveConfirmSaveCallback;
     sSavingComplete = FALSE;
 }
@@ -891,7 +879,7 @@ void SaveGame(void)
 static void ShowSaveMessage(const u8 *message, u8 (*saveCallback)(void))
 {
     StringExpandPlaceholders(gStringVar4, message);
-    LoadMessageBoxAndFrameGfx(0, TRUE); //craft... could be useful for in-process messaging
+    LoadMessageBoxAndFrameGfx(0, TRUE);
     AddTextPrinterForMessage_2(TRUE);
     sSavingComplete = TRUE;
     sSaveDialogCallback = saveCallback;
@@ -967,8 +955,8 @@ static bool8 SaveErrorTimer(void)
 static u8 SaveConfirmSaveCallback(void)
 {
     ClearStdWindowAndFrame(GetStartMenuWindowId(), FALSE);
-    RemoveStartMenuWindow(); //removes and sets to window_none
-    ShowSaveInfoWindow(); //craft copywin_gfx
+    RemoveStartMenuWindow();
+    ShowSaveInfoWindow();
 
     if (InBattlePyramid())
     {
@@ -1090,7 +1078,7 @@ static u8 SaveDoSaveCallback(void)
     }
 
     if (saveStatus == SAVE_STATUS_OK)
-        ShowSaveMessage(gText_PlayerSavedGame, SaveSuccessCallback); //craft wait for printing, play se, wait for se & timer then close
+        ShowSaveMessage(gText_PlayerSavedGame, SaveSuccessCallback);
     else
         ShowSaveMessage(gText_SaveError, SaveErrorCallback);
 
@@ -1318,7 +1306,7 @@ static void Task_SaveAfterLinkBattle(u8 taskId)
     }
 }
 
-static void ShowSaveInfoWindow(void) //craft
+static void ShowSaveInfoWindow(void)
 {
     struct WindowTemplate saveInfoWindow = sSaveInfoWindowTemplate;
     u8 gender;
@@ -1410,7 +1398,7 @@ void SaveForBattleTowerLink(void)
 static void HideStartMenuWindow(void)
 {
     ClearStdWindowAndFrame(GetStartMenuWindowId(), TRUE);
-    RemoveStartMenuWindow(); //in menu.c
+    RemoveStartMenuWindow();
     ScriptUnfreezeObjectEvents();
     UnlockPlayerFieldControls();
 }
@@ -1425,11 +1413,4 @@ void AppendToList(u8 *list, u8 *pos, u8 newEntry)
 {
     list[*pos] = newEntry;
     (*pos)++;
-}
-
-static bool8 StartMenuSampleUiCallback(void)
-{
-    // Change which version of the UI is launched by changing which task is called from here
-    CreateTask(Task_OpenSampleUi_SlidingPanel, 0);
-    return TRUE;
 }

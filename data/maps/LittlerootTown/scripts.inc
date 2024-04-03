@@ -396,10 +396,6 @@ LittlerootTown_EventScript_TownSign::
 	msgbox LittlerootTown_Text_TownSign, MSGBOX_SIGN
 	end
 
-LittlerootTown_Craft::
-	call Craft_EventScript_CraftTable
-	end
-
 LittlerootTown_EventScript_BirchsLabSign::
 	msgbox LittlerootTown_Text_ProfBirchsLab, MSGBOX_SIGN
 	end

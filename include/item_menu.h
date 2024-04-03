@@ -17,7 +17,6 @@ enum {
     ITEMMENULOCATION_APPRENTICE,
     ITEMMENULOCATION_WALLY,
     ITEMMENULOCATION_PCBOX,
-    ITEMMENULOCATION_CHOOSE_ITEM,
     ITEMMENULOCATION_CRAFT,
     ITEMMENULOCATION_LAST,
 };
@@ -95,7 +94,6 @@ void CB2_BagMenuFromBattle(void);
 void UpdatePocketListPosition(u8 pocketId);
 void CB2_ReturnToBagMenuPocket(void);
 void CB2_BagMenuFromStartMenu(void);
-void CB2_BagMenuFromCraftMenu(void);
 u8 GetItemListPosition(u8 pocketId);
 bool8 UseRegisteredKeyItemOnField(void);
 void CB2_GoToSellMenu(void);
@@ -110,5 +108,7 @@ void UpdatePocketItemList(u8 pocketId);
 void DisplayItemMessage(u8 taskId, u8 fontId, const u8 *str, void ( *callback)(u8 taskId));
 void DisplayItemMessageOnField(u8 taskId, const u8 *src, TaskFunc callback);
 void CloseItemMessage(u8 taskId);
+void CB2_BagMenuFromCraftMenu(void);
+
 
 #endif //GUARD_ITEM_MENU_H

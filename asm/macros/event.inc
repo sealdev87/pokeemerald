@@ -887,7 +887,7 @@
 	.endm
 
 	@ Displays a multichoice box from which the user can choose a selection, and blocks script execution until a selection is made.
-	@ Lists of options are predefined (gMultichoiceLists) and the one to be used is specified with multichoiceId.
+	@ Lists of options are predefined (sMultichoiceLists) and the one to be used is specified with multichoiceId.
 	@ If ignoreBPress is set to a non-zero value, then the user will not be allowed to back out of the multichoice with the B button.
 	.macro multichoice x:req, y:req, multichoiceId:req, ignoreBPress:req
 	.byte 0x6f
@@ -898,7 +898,7 @@
 	.endm
 
 	@ Displays a multichoice box from which the user can choose a selection, and blocks script execution until a selection is made.
-	@ Lists of options are predefined (gMultichoiceLists) and the one to be used is specified with multichoiceId.
+	@ Lists of options are predefined (sMultichoiceLists) and the one to be used is specified with multichoiceId.
 	@ The default argument determines the initial position of the cursor when the box is first opened; it is zero-indexed, and if it is too large, it is treated as 0.
 	@ If ignoreBPress is set to a non-zero value, then the user will not be allowed to back out of the multichoice with the B button.
 	.macro multichoicedefault x:req, y:req, multichoiceId:req, default:req, ignoreBPress:req
@@ -911,7 +911,7 @@
 	.endm
 
 	@ Displays a multichoice box from which the user can choose a selection, and blocks script execution until a selection is made.
-	@ Lists of options are predefined (gMultichoiceLists) and the one to be used is specified with multichoiceId.
+	@ Lists of options are predefined (sMultichoiceLists) and the one to be used is specified with multichoiceId.
 	@ The per_row argument determines how many list items will be shown on a single row of the box.
 	@ If ignoreBPress is set to a non-zero value, then the user will not be allowed to back out of the multichoice with the B button.
 	.macro multichoicegrid x:req, y:req, multichoiceId:req, per_row:req, ignoreBPress:req
@@ -1938,13 +1938,4 @@
 	setvar VAR_0x8005, \level
 	setvar VAR_0x8006, \item
 	special CreateEnemyEventMon
-	.endm
-
-	@ Opens the bag in the specified pocket and lets the Player choose an item.
-	@ This item can be used for scripting purposes and it's stored in VAR_ITEM_ID.
-	.macro chooseitem pocket:req
-	setvar VAR_TEMP_1, \pocket
-	fadescreen FADE_TO_BLACK
-	special ChooseItemFromBag
-	waitstate
 	.endm

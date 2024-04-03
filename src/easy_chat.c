@@ -2277,7 +2277,7 @@ static int SelectNewWord(void)
         SetSelectedWord(easyChatWord);
         if (sEasyChatScreen->type != EASY_CHAT_TYPE_BARD_SONG)
         {
-            sEasyChatScreen->inputState = INPUTSTATE_PHRASE; //go back to main state (craft)
+            sEasyChatScreen->inputState = INPUTSTATE_PHRASE;
             return ECFUNC_CLOSE_WORD_SELECT;
         }
         else
@@ -3520,7 +3520,7 @@ static bool8 OpenWordSelect(void)
     return TRUE;
 }
 
-static bool8 CloseWordSelect(void) //here we go (craft)
+static bool8 CloseWordSelect(void)
 {
     switch (sScreenControl->funcState)
     {
@@ -4048,7 +4048,7 @@ static void AddPhraseWindow(void)
     PutWindowTilemap(sScreenControl->windowId);
 }
 
-static void PrintCurrentPhrase(void) //craft
+static void PrintCurrentPhrase(void)
 {
     u8 strClear[4];
     u16 *currentPhrase;
