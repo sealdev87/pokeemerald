@@ -110,5 +110,4 @@ void DisplayItemMessageOnField(u8 taskId, const u8 *src, TaskFunc callback);
 void CloseItemMessage(u8 taskId);
 void CB2_BagMenuFromCraftMenu(void);
 
-
 #endif //GUARD_ITEM_MENU_H

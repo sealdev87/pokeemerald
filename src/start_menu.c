@@ -47,7 +47,6 @@
 #include "constants/rgb.h"
 #include "constants/songs.h"
 
-
 // Menu actions
 enum
 {
@@ -112,7 +111,6 @@ static bool8 BattlePyramidRetireStartCallback(void);
 static bool8 BattlePyramidRetireReturnCallback(void);
 static bool8 BattlePyramidRetireCallback(void);
 static bool8 HandleStartMenuInput(void);
-
 
 // Save dialog callbacks
 static u8 SaveConfirmSaveCallback(void);
@@ -700,7 +698,7 @@ static bool8 StartMenuSaveCallback(void)
     if (InBattlePyramid())
         RemoveExtraStartMenuWindows();
 
-    gMenuCallback = SaveStartCallback;
+    gMenuCallback = SaveStartCallback; // Display save menu
 
     return FALSE;
 }

@@ -82,7 +82,7 @@
       "x": 37,
       "y": 4,
       "elevation": 3,
-      "movement_type": "MOVEMENT_TYPE_LOOK_AROUND",
+      "movement_type": "MOVEMENT_TYPE_WANDER_AROUND",
       "movement_range_x": 1,
       "movement_range_y": 1,
       "trainer_type": "TRAINER_TYPE_NONE",
@@ -172,7 +172,7 @@
       "y": 6,
       "elevation": 0,
       "player_facing_dir": "BG_EVENT_PLAYER_FACING_ANY",
-      "script": "Craft_EventScript_CraftTable"
+      "script": "CraftTutorial_EventScript_Table"
     }
   ]
 }

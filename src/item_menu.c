@@ -939,8 +939,6 @@ static u32 IsOnCraftTable(u16 itemId){
 
 static void GetItemName(s8 *dest, u16 itemId)
 {
-    u8 *str;
-
     switch (gBagPosition.pocket)
     {
     case TMHM_POCKET:

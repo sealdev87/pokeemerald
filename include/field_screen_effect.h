@@ -44,5 +44,4 @@ bool8 IsPlayerStandingStill(void);
 bool8 FieldCB_ReturnToField_OpenCraftMenu(void);
 void ReturnToField_OpenCraftMenu(void);
 
-
 #endif // GUARD_FIELD_SCREEN_EFFECT_H

@@ -16,7 +16,6 @@
 #include "menu.h"
 #include "overworld.h"
 #include "gpu_regs.h"
-
 #include "constants/items.h"
 #include "constants/hold_effects.h"
 
