@@ -175,7 +175,7 @@ static bool8 HandleCraftMenuInput(void);
 static void CraftMenuTask(u8 taskId);
 static bool8 FieldCB_ReturnToFieldCraftMenu(void);
 
-//Strings
+// Strings
 static const u8 sText_Ready[] = _("READY");
 static const u8 sText_ConfirmPackUp[] = _("Would you like to pack up?");
 static const u8 sText_ConfirmReady[] = _("This looks like it'll be good.\nCraft {STR_VAR_1}{STR_VAR_2}?");
@@ -305,7 +305,7 @@ static void Task_CreateCraftMenu(TaskFunc followupFunc);
 
 // Alright, and with that out of the way..!
 
-//Menu / Window Functions
+// Menu / Window Functions
 static void BuildCraftTableActions(void){
     u32 i;
 
@@ -653,7 +653,8 @@ void Task_ShowCraftMenu(u8 taskId){
     }
 }
 
-void ShowCraftMenu(void){ // The star of the show
+// The start of the show
+void ShowCraftMenu(void){
 
     PlayerFreeze();
     StopPlayerAvatar();
