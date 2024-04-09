@@ -188,7 +188,7 @@ static const u8 sText_ColorShadowBlue[] = _("{COLOR BLUE}{SHADOW LIGHT_BLUE}");
 static const u8 sText_InBag[] = _("IN BAG:");
 static const u8 sText_Var2Var1[] = _("{STR_VAR_2}{STR_VAR_1}");
 extern const u8 gText_DiplomaEmpty[]; //red, lol
-static const u8 sText_PackingUp[] = _("Packing up.{PAUSE 25}.{PAUSE 25}.{PAUSE 25}\p{PLAYER} put the items back in the bag.{PAUSE_UNTIL_PRESS}");
+static const u8 sText_PackingUp[] = _("Packing up.{PLAY_SE SE_BALL}{PAUSE 25}.{PLAY_SE SE_BALL}{PAUSE 25}.{PLAY_SE SE_BALL}{PAUSE 25}\p{PLAYER} put the items back in the bag.{PAUSE_UNTIL_PRESS}");
 
 static const struct MenuAction sCraftTableActions[] = {
     [TABLE_ACTION_BLANK]            = {gText_Dash,        {.u8_void = CraftMenuAddSwapCallback}},
@@ -771,7 +771,7 @@ static bool8 HandleCraftMenuInput(void){
                 //If !IsCraftTableEmpty then gmenucallback = CraftMenuPackUpCallback, otherwise just quit
                 if (IsCraftTableEmpty()){
 
-                    PlaySE(SE_WIN_OPEN);
+                    PlaySE(SE_SELECT);
                     HideCraftMenu();
                     ScriptContext_Enable();
                     return TRUE;
@@ -1310,6 +1310,7 @@ static u8 sCraftDialogueConfirmCallback(void){
     switch (CraftMessage){
 
         case CRAFT_PACKUP_CONFIRM:
+            PlaySE(SE_SELECT);
             message = sText_ConfirmPackUp;
             break;
 
@@ -1319,6 +1320,7 @@ static u8 sCraftDialogueConfirmCallback(void){
                 PlaySE(SE_BOO);
             }
             else if(CheckCraftProductFlags(CraftProduct)){
+                PlaySE(SE_SELECT);
 
                 //expand those placeholders
                 if (CraftQty > 1){

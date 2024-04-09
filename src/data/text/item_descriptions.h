@@ -1552,5 +1552,5 @@ static const u8 sOldSeaMapDesc[] = _(
 
 static const u8 sCraftBundleDesc[] = _(
     "A roll-out tool kit\n"
-    "packed with a ton\n"
-    "of craft supplies.");
+    "packed full of\n"
+    "crafting supplies.");

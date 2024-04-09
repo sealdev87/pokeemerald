@@ -1310,8 +1310,10 @@ static void Task_BagMenu_HandleInput(u8 taskId)
                     tItemCount = 0;
                     Task_RemoveItemFromBag(taskId);
                 }
-                else
+                else {
+                    PlaySE(SE_BOO);
                     DisplayItemMessage(taskId, FONT_NORMAL, gText_NoItems, CloseItemMessage);
+                }
                 return;
             }
             break;

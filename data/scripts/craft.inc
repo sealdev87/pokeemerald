@@ -52,6 +52,7 @@ CraftTutorial_EventScript_Hey::
     lockall
     applymovement 5, Common_Movement_WalkInPlaceFasterDown
 	waitmovement 0
+    playse SE_PIN
 	applymovement 5, Common_Movement_ExclamationMark
 	waitmovement 0
 	applymovement 5, Common_Movement_Delay48
@@ -77,7 +78,6 @@ CraftTutorial_EventScript_ApproachPlayer1::
     waitmovement 0
     turnobject OBJ_EVENT_ID_PLAYER, DIR_SOUTH
     msgbox CraftTutorial_Text_HeyLikeMySetup2, MSGBOX_DEFAULT
-    closemessage
     turnobject 5, DIR_NORTH
     return
 
@@ -87,7 +87,6 @@ CraftTutorial_EventScript_ApproachPlayer2::
     waitmovement 0
     turnobject OBJ_EVENT_ID_PLAYER, DIR_WEST
     msgbox CraftTutorial_Text_HeyLikeMySetup2, MSGBOX_DEFAULT
-    closemessage
     applymovement OBJ_EVENT_ID_PLAYER, CraftTutorial_Movement_GoToCraftTableMovePlayer2
     applymovement 5, CraftTutorial_Movement_GoToCraftTableMovePlayer3
     waitmovement 0
@@ -100,7 +99,6 @@ CraftTutorial_EventScript_ApproachPlayer3::
     waitmovement 0
     turnobject OBJ_EVENT_ID_PLAYER, DIR_NORTH
     msgbox CraftTutorial_Text_HeyLikeMySetup2, MSGBOX_DEFAULT
-    closemessage
     turnobject 5, DIR_SOUTH
     return
 
@@ -127,25 +125,28 @@ CraftTutorial_EventScript_LetsDoIt::
 	specialvar VAR_RESULT, GetPlayerFacingDirection
     msgbox CraftTutorial_Text_YouGotTheStuff, MSGBOX_DEFAULT
     closemessage
+    playbgm MUS_FOLLOW_ME, FALSE
     applymovement 5, CraftTutorial_Movement_GoToCraftTable2
     call_if_eq VAR_RESULT, DIR_SOUTH, CraftTutorial_EventScript_LetsGoN
     call_if_eq VAR_RESULT, DIR_NORTH, CraftTutorial_EventScript_LetsGoS
     call_if_eq VAR_RESULT, DIR_WEST,  CraftTutorial_EventScript_LetsGoE
     call_if_eq VAR_RESULT, DIR_EAST,  CraftTutorial_EventScript_LetsGoW
-    turnobject 5, DIR_WEST
     msgbox CraftTutorial_Text_CraftingIsSimple, MSGBOX_DEFAULT
     closemessage
     turnobject 5, DIR_NORTH
     applymovement OBJ_EVENT_ID_PLAYER, CraftTutorial_Movement_FollowToCraftTableFinish
+    waitmovement 0
     msgbox CraftTutorial_Text_ChooseSpaceAndAddItem, MSGBOX_DEFAULT
     setobjectxyperm 5, 39, 7
 	setobjectmovementtype 5, MOVEMENT_TYPE_LOOK_AROUND
     setvar VAR_TEMP_0, 2
+	fadedefaultbgm
     releaseall
     end
 
 CraftTutorial_EventScript_HowToCraft::
     msgbox CraftTutorial_Text_ChooseSpaceAndAddItem, MSGBOX_DEFAULT
+    closemessage
     releaseall
     end
 
@@ -175,17 +176,21 @@ CraftTutorial_UseCraftTable::
     end
 
 CraftTutorial_EventScript_Finish::
+    delay 20
     turnobject OBJ_EVENT_ID_PLAYER, DIR_SOUTH
+    playse SE_PIN
     msgbox CraftTutorial_Text_ThatsIt, MSGBOX_DEFAULT
+    closemessage
     applymovement 5, CraftTutorial_Movement_CollectPayment
     waitmovement 0
     playse SE_SHOP
+    removeitem ITEM_ANTIDOTE, 2
     msgbox CraftTutorial_Text_PlayerGaveAntidote, MSGBOX_DEFAULT
-    closemessage
     msgbox CraftTutorial_Text_PleasureDoingBusiness, MSGBOX_DEFAULT
     closemessage
     applymovement 5, CraftTutorial_Movement_GoBackToGrassAfterTutorial
     waitmovement 0
+    setobjectmovementtype 5, MOVEMENT_TYPE_WANDER_AROUND
     setvar VAR_TEMP_0, 0
     setvar VAR_ROUTE102_STATE, 3
     releaseall
@@ -221,7 +226,7 @@ CraftTutorial_Movement_GoBackToGrass:
     walk_left
     walk_up
     walk_up
-    face_down
+    face_right
     step_end
 
 CraftTutorial_Movement_CollectPayment:
@@ -234,7 +239,7 @@ CraftTutorial_Movement_GoBackToGrassAfterTutorial:
     walk_up
     walk_up
     walk_up
-    face_down
+    face_right
     step_end
 
 CraftTutorial_Movement_GoToCraftTable2:
@@ -243,7 +248,7 @@ CraftTutorial_Movement_GoToCraftTable2:
     walk_down
     walk_right
     walk_right
-    face_up
+    face_left
     step_end
 
 CraftTutorial_Movement_FollowToCraftTableSouth:
@@ -307,7 +312,7 @@ CraftTutorial_Movement_GoToCraftTableMovePlayer3:
 CraftTutorial_Text_ItsAFlowerBox:
     .string "It's a simple flower box and paver\n"
     .string "stone.\p"
-    .string "Someone's tools are laying here...$"
+    .string "Someone's tools are laying there...$"
 
 CraftTutorial_Text_HeyLikeMySetup:
     .string "Hey! Like my setup?$"
@@ -322,11 +327,11 @@ CraftTutorial_Text_HeyLikeMySetup2:
 
 CraftTutorial_Text_FindAPechaAndPotion:
     .string "Tell you what. I've got a bit of extra\n"
-    .string "time today, so if you're interested\p"
+    .string "time today, so if you're interested\l"
     .string "I can show you how to CRAFT.\p"
     .string "Find me a PECHA BERRY and a POTION, and\n"
-    .string "I'll show you how to put two and two\p"
-    .string "together... for a small price.\p"
+    .string "I'll show you how to put two and two\l"
+    .string "together!\p...for a small price.\p"
     .string "Sounds like a great deal, no? Find\n"
     .string "those items and meet me back here.\p"
     .string "I think I saw some PECHA BERRIES\n"
@@ -336,15 +341,15 @@ CraftTutorial_Text_ItsAWorkStation:
     .string "It's a WORK STATION.$"
 
 CraftTutorial_Text_YouGotTheStuff:
-    .string "...\n"
-    .string "You got the stuff? Were you followed?\p"
-    .string "Haha just kidding! Glad you were able to\n"
-    .string "get everything.\p"
+    .string "...You got the stuff?\n"
+    .string "Were you followed?\p"
+    .string "Haha, just kidding! Glad you were able to\n"
+    .string "get everything.\l"
     .string "Let's do it - follow me!$"
 
 CraftTutorial_Text_CraftingIsSimple:
     .string "Crafting ANTIDOTE is simple, provided\n"
-    .string "you know what you're doing and\p"
+    .string "you know what you're doing and\l"
     .string "have all the right ITEMS.$"
     
 CraftTutorial_Text_ChooseSpaceAndAddItem:
@@ -397,6 +402,6 @@ CraftTutorial_Text_PleasureDoingBusiness:
     .string "...\p"
     .string "Only joking!\p"
     .string "I'll be around if you need me.\p"
-    .string "This is my work spot, but I'm also hoping\n"
-    .string "to find a MARILL to train up as my\l"
-    .string "assistant!$"
+    .string "This may be my working spot, but I'm\n"
+    .string "also hoping to find a MARILL to train up\l"
+    .string "as my assistant!$"
