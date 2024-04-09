@@ -1,7 +1,7 @@
 Craft_EventScript_CraftTable::
     msgbox Text_CraftTable_WantToCraft, MSGBOX_YESNO
     delay 4
-    goto_if_eq VAR_RESULT, YES, Craft_UseCraftTable
+    goto_if_eq VAR_RESULT, YES, Craft_EventScript_OpenCraftMenu
     goto Craft_Cancel
     end
 
@@ -9,7 +9,7 @@ Text_CraftTable_WantToCraft:
     .string "There's a WORK STATION...\n"
     .string "Want to CRAFT something?$"
 
-Craft_UseCraftTable::
+Craft_EventScript_OpenCraftMenu::
     playse SE_WIN_OPEN
     special ShowCraftMenu
     waitstate
@@ -374,7 +374,7 @@ CraftTutorial_Text_SpringWaterIsNice:
     .string "The spring water in this pond is some of\n"
     .string "the best in the PETALBURG watershed.\p"
     .string "It's perfect for keeping my WORK\n"
-    .string "STATION clean of all the sticky PECHA\l"
+    .string "STATION clear of all the sticky PECHA\l"
     .string "juice...$"
 
 CraftTutorial_Text_ThatsIt:
@@ -397,5 +397,6 @@ CraftTutorial_Text_PleasureDoingBusiness:
     .string "...\p"
     .string "Only joking!\p"
     .string "I'll be around if you need me.\p"
-    .string "I'm hoping to find a MARILL around here\n"
-    .string "to train up as my assistant!$"
+    .string "This is my work spot, but I'm also hoping\n"
+    .string "to find a MARILL to train up as my\l"
+    .string "assistant!$"
