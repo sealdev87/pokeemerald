@@ -65,6 +65,8 @@
 #include "constants/weather.h"
 #include "constants/metatile_labels.h"
 #include "palette.h"
+#include "item.h"
+#include "item_menu.h"
 
 #define TAG_ITEM_ICON 5500
 

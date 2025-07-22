@@ -41,5 +41,7 @@ void DoOrbEffect(void);
 void FadeOutOrbEffect(void);
 void WriteFlashScanlineEffectBuffer(u8 flashLevel);
 bool8 IsPlayerStandingStill(void);
+bool8 FieldCB_ReturnToField_OpenCraftMenu(void);
+void ReturnToField_OpenCraftMenu(void);
 
 #endif // GUARD_FIELD_SCREEN_EFFECT_H

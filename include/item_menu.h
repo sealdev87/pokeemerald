@@ -17,6 +17,7 @@ enum {
     ITEMMENULOCATION_APPRENTICE,
     ITEMMENULOCATION_WALLY,
     ITEMMENULOCATION_PCBOX,
+    ITEMMENULOCATION_CRAFT,
     ITEMMENULOCATION_LAST,
 };
 
@@ -107,5 +108,6 @@ void UpdatePocketItemList(u8 pocketId);
 void DisplayItemMessage(u8 taskId, u8 fontId, const u8 *str, void (*callback)(u8 taskId));
 void DisplayItemMessageOnField(u8 taskId, const u8 *string, TaskFunc callback);
 void CloseItemMessage(u8 taskId);
+void CB2_BagMenuFromCraftMenu(void);
 
 #endif //GUARD_ITEM_MENU_H
