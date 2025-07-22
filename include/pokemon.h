@@ -440,6 +440,7 @@ u8 GetGenderFromSpeciesAndPersonality(u16 species, u32 personality);
 void SetMultiuseSpriteTemplateToPokemon(u16 speciesTag, u8 battlerPosition);
 void SetMultiuseSpriteTemplateToTrainerBack(u16 trainerPicId, u8 battlerPosition);
 void SetMultiuseSpriteTemplateToTrainerFront(u16 trainerPicId, u8 battlerPosition);
+u16 MonTryLearningNewMoveEvolution(struct Pokemon *mon, bool8 firstMove);
 
 /* GameFreak called Get(Box)MonData with either 2 or 3 arguments, for
  * type safety we have a Get(Box)MonData macro which dispatches to
