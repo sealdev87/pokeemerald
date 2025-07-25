@@ -50,8 +50,8 @@ static const u8 sGuillotineDescription[] = _(
     "that may cause fainting.");
 
 static const u8 sRazorWindDescription[] = _(
-    "A 2-turn move that strikes\n"
-    "the foe on the 2nd turn.");
+    "Blade-like wind attack that\n"
+    "can reduce DEFENSE stat.");
 
 static const u8 sSwordsDanceDescription[] = _(
     "A fighting dance that\n"
@@ -294,8 +294,8 @@ static const u8 sLeechSeedDescription[] = _(
     "steal HP on every turn.");
 
 static const u8 sGrowthDescription[] = _(
-    "Forces the body to grow\n"
-    "and heightens SP. ATK.");
+    "Uses sunlight to enhance\n"
+    "ATTACK and SP. ATK.");
 
 static const u8 sRazorLeafDescription[] = _(
     "Cuts the enemy with leaves.\n"
@@ -394,8 +394,8 @@ static const u8 sQuickAttackDescription[] = _(
     "that always strikes first.");
 
 static const u8 sRageDescription[] = _(
-    "Raises the user's ATTACK\n"
-    "every time it is hit.");
+    "Fierce assault that\n"
+    "boosts ATTACK power.");
 
 static const u8 sTeleportDescription[] = _(
     "A psychic move for fleeing\n"
@@ -426,8 +426,8 @@ static const u8 sHardenDescription[] = _(
     "muscles to raise DEFENSE.");
 
 static const u8 sMinimizeDescription[] = _(
-    "Minimizes the user's size\n"
-    "to raise evasiveness.");
+    "Shrinks the body to greatly\n"
+    "increase evasiveness.");
 
 static const u8 sSmokescreenDescription[] = _(
     "Lowers the foe's accuracy\n"
@@ -594,8 +594,8 @@ static const u8 sFlashDescription[] = _(
     "light that cuts accuracy.");
 
 static const u8 sPsywaveDescription[] = _(
-    "Attacks with a psychic\n"
-    "wave of varying intensity.");
+    "Projects psychic energy with\n"
+    "unpredictable intensity.");
 
 static const u8 sSplashDescription[] = _(
     "It's just a splash...\n"
@@ -914,8 +914,8 @@ static const u8 sPursuitDescription[] = _(
     "on a foe switching out.");
 
 static const u8 sRapidSpinDescription[] = _(
-    "Spins the body at high\n"
-    "speed to strike the foe.");
+    "Spins rapidly to clear\n"
+    "traps and boost SPEED.");
 
 static const u8 sSweetScentDescription[] = _(
     "Allures the foe to reduce\n"
@@ -946,8 +946,8 @@ static const u8 sMoonlightDescription[] = _(
     "varies with the weather.");
 
 static const u8 sHiddenPowerDescription[] = _(
-    "The effectiveness varies\n"
-    "with the user.");
+    "The attack's type changes\n"
+    "based on the user's traits.");
 
 static const u8 sCrossChopDescription[] = _(
     "A double-chopping attack.\n"
@@ -1126,8 +1126,8 @@ static const u8 sYawnDescription[] = _(
     "then sleeping next turn.");
 
 static const u8 sKnockOffDescription[] = _(
-    "Knocks down the foe's held\n"
-    "item to prevent its use.");
+    "Removes foe's item,\n"
+    "hits harder when it does!");
 
 static const u8 sEndeavorDescription[] = _(
     "Gains power if the user's HP\n"
@@ -1174,8 +1174,8 @@ static const u8 sCamouflageDescription[] = _(
     "depending on the location.");
 
 static const u8 sTailGlowDescription[] = _(
-    "Flashes a light that sharply\n"
-    "raises SP. ATK.");
+    "Flashes a bright light to\n"
+    "drastically raise SP. ATK.");
 
 static const u8 sLusterPurgeDescription[] = _(
     "Attacks with a burst of\n"
@@ -1374,8 +1374,8 @@ static const u8 sCovetDescription[] = _(
     "item held by the foe.");
 
 static const u8 sVoltTackleDescription[] = _(
-    "A life-risking tackle that\n"
-    "slightly hurts the user.");
+    "High-voltage attack with\n"
+    "recoil and paralysis chance.");
 
 static const u8 sMagicalLeafDescription[] = _(
     "Attacks with a strange leaf\n"

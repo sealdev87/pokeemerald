@@ -272,7 +272,7 @@ enum BattlerId
 #define MOVE_EFFECT_ACC_MINUS_1         27
 #define MOVE_EFFECT_EVS_MINUS_1         28
 #define MOVE_EFFECT_RECHARGE            29
-#define MOVE_EFFECT_RAGE                30
+#define MOVE_EFFECT_UNUSED              30
 #define MOVE_EFFECT_STEAL_ITEM          31
 #define MOVE_EFFECT_PREVENT_ESCAPE      32
 #define MOVE_EFFECT_NIGHTMARE           33

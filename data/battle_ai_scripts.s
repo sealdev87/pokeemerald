@@ -125,7 +125,7 @@ AI_CheckBadMove_CheckEffect:
 	if_effect EFFECT_TOXIC, AI_CBM_Toxic
 	if_effect EFFECT_LIGHT_SCREEN, AI_CBM_LightScreen
 	if_effect EFFECT_OHKO, AI_CBM_OneHitKO
-	if_effect EFFECT_RAZOR_WIND, AI_CBM_HighRiskForDamage
+	if_effect EFFECT_GROWTH, AI_CBM_AttackUp
 	if_effect EFFECT_SUPER_FANG, AI_CBM_HighRiskForDamage
 	if_effect EFFECT_MIST, AI_CBM_Mist
 	if_effect EFFECT_FOCUS_ENERGY, AI_CBM_FocusEnergy
@@ -156,6 +156,7 @@ AI_CheckBadMove_CheckEffect:
 	if_effect EFFECT_COUNTER, AI_CBM_HighRiskForDamage
 	if_effect EFFECT_ENCORE, AI_CBM_Encore
 	if_effect EFFECT_SNORE, AI_CBM_DamageDuringSleep
+	if_effect EFFECT_SPECIAL_ATTACK_UP_3, AI_CBM_SpAtkUp
 	if_effect EFFECT_SLEEP_TALK, AI_CBM_DamageDuringSleep
 	if_effect EFFECT_FLAIL, AI_CBM_HighRiskForDamage
 	if_effect EFFECT_MEAN_LOOK, AI_CBM_CantEscape
@@ -680,7 +681,7 @@ AI_CheckViability:
 	if_effect EFFECT_LIGHT_SCREEN, AI_CV_LightScreen
 	if_effect EFFECT_REST, AI_CV_Rest
 	if_effect EFFECT_OHKO, AI_CV_OneHitKO
-	if_effect EFFECT_RAZOR_WIND, AI_CV_ChargeUpMove
+	if_effect EFFECT_GROWTH, AI_CV_AttackUp
 	if_effect EFFECT_SUPER_FANG, AI_CV_SuperFang
 	if_effect EFFECT_TRAP, AI_CV_Trap
 	if_effect EFFECT_HIGH_CRITICAL, AI_CV_HighCrit
@@ -715,6 +716,7 @@ AI_CheckViability:
 	if_effect EFFECT_PAIN_SPLIT, AI_CV_PainSplit
 	if_effect EFFECT_SNORE, AI_CV_Snore
 	if_effect EFFECT_LOCK_ON, AI_CV_LockOn
+	if_effect EFFECT_SPECIAL_ATTACK_UP_3, AI_CV_SpAtkUp
 	if_effect EFFECT_SLEEP_TALK, AI_CV_SleepTalk
 	if_effect EFFECT_DESTINY_BOND, AI_CV_DestinyBond
 	if_effect EFFECT_FLAIL, AI_CV_Flail
@@ -1712,6 +1714,7 @@ AI_CV_Encore_EncouragedMovesToEncore:
 	.byte EFFECT_TOXIC
 	.byte EFFECT_LIGHT_SCREEN
 	.byte EFFECT_REST
+	.byte EFFECT_GROWTH
 	.byte EFFECT_SUPER_FANG
 	.byte EFFECT_SPECIAL_DEFENSE_UP_2
 	.byte EFFECT_CONFUSE
@@ -2663,6 +2666,7 @@ AI_SetupFirstTurn_SetupEffectsToEncourage:
 	.byte EFFECT_EVASION_DOWN
 	.byte EFFECT_CONVERSION
 	.byte EFFECT_LIGHT_SCREEN
+	.byte EFFECT_GROWTH
 	.byte EFFECT_SPECIAL_DEFENSE_UP_2
 	.byte EFFECT_FOCUS_ENERGY
 	.byte EFFECT_CONFUSE
@@ -2685,6 +2689,7 @@ AI_SetupFirstTurn_SetupEffectsToEncourage:
 	.byte EFFECT_PARALYZE
 	.byte EFFECT_SUBSTITUTE
 	.byte EFFECT_LEECH_SEED
+	.byte EFFECT_SPECIAL_ATTACK_UP_3
 	.byte EFFECT_MINIMIZE
 	.byte EFFECT_CURSE
 	.byte EFFECT_SWAGGER
@@ -3013,6 +3018,7 @@ AI_HPAware_DiscouragedEffectsWhenMediumHP:
 	.byte EFFECT_LIGHT_SCREEN
 	.byte EFFECT_MIST
 	.byte EFFECT_FOCUS_ENERGY
+	.byte EFFECT_GROWTH
 	.byte EFFECT_ATTACK_UP_2
 	.byte EFFECT_DEFENSE_UP_2
 	.byte EFFECT_SPEED_UP_2
@@ -3027,6 +3033,7 @@ AI_HPAware_DiscouragedEffectsWhenMediumHP:
 	.byte EFFECT_SPECIAL_DEFENSE_DOWN_2
 	.byte EFFECT_ACCURACY_DOWN_2
 	.byte EFFECT_EVASION_DOWN_2
+	.byte EFFECT_SPECIAL_ATTACK_UP_3
 	.byte EFFECT_CONVERSION_2
 	.byte EFFECT_SAFEGUARD
 	.byte EFFECT_BELLY_DRUM
@@ -3057,6 +3064,7 @@ AI_HPAware_DiscouragedEffectsWhenLowHP:
 	.byte EFFECT_LIGHT_SCREEN
 	.byte EFFECT_MIST
 	.byte EFFECT_FOCUS_ENERGY
+	.byte EFFECT_GROWTH
 	.byte EFFECT_ATTACK_UP_2
 	.byte EFFECT_DEFENSE_UP_2
 	.byte EFFECT_SPEED_UP_2
@@ -3071,9 +3079,9 @@ AI_HPAware_DiscouragedEffectsWhenLowHP:
 	.byte EFFECT_SPECIAL_DEFENSE_DOWN_2
 	.byte EFFECT_ACCURACY_DOWN_2
 	.byte EFFECT_EVASION_DOWN_2
-	.byte EFFECT_RAGE
 	.byte EFFECT_CONVERSION_2
 	.byte EFFECT_LOCK_ON
+	.byte EFFECT_SPECIAL_ATTACK_UP_3
 	.byte EFFECT_SAFEGUARD
 	.byte EFFECT_BELLY_DRUM
 	.byte EFFECT_PSYCH_UP
@@ -3107,6 +3115,7 @@ AI_HPAware_DiscouragedEffectsWhenTargetMediumHP:
 	.byte EFFECT_EVASION_DOWN
 	.byte EFFECT_MIST
 	.byte EFFECT_FOCUS_ENERGY
+	.byte EFFECT_GROWTH
 	.byte EFFECT_ATTACK_UP_2
 	.byte EFFECT_DEFENSE_UP_2
 	.byte EFFECT_SPEED_UP_2
@@ -3123,6 +3132,7 @@ AI_HPAware_DiscouragedEffectsWhenTargetMediumHP:
 	.byte EFFECT_EVASION_DOWN_2
 	.byte EFFECT_POISON
 	.byte EFFECT_PAIN_SPLIT
+	.byte EFFECT_SPECIAL_ATTACK_UP_3
 	.byte EFFECT_PERISH_SONG
 	.byte EFFECT_SAFEGUARD
 	.byte EFFECT_TICKLE
@@ -3154,7 +3164,7 @@ AI_HPAware_DiscouragedEffectsWhenTargetLowHP:
 	.byte EFFECT_TOXIC
 	.byte EFFECT_LIGHT_SCREEN
 	.byte EFFECT_OHKO
-	.byte EFFECT_SUPER_FANG //Maybe supposed to be EFFECT_RAZOR_WIND
+	.byte EFFECT_GROWTH
 	.byte EFFECT_SUPER_FANG
 	.byte EFFECT_MIST
 	.byte EFFECT_FOCUS_ENERGY
@@ -3178,6 +3188,7 @@ AI_HPAware_DiscouragedEffectsWhenTargetLowHP:
 	.byte EFFECT_PAIN_SPLIT
 	.byte EFFECT_CONVERSION_2
 	.byte EFFECT_LOCK_ON
+	.byte EFFECT_SPECIAL_ATTACK_UP_3
 	.byte EFFECT_SPITE
 	.byte EFFECT_PERISH_SONG
 	.byte EFFECT_SWAGGER

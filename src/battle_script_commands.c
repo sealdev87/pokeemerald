@@ -656,7 +656,7 @@ static const u8 *const sMoveEffectBS_Ptrs[] =
     [MOVE_EFFECT_ACC_MINUS_1]      = BattleScript_MoveEffectSleep,
     [MOVE_EFFECT_EVS_MINUS_1]      = BattleScript_MoveEffectSleep,
     [MOVE_EFFECT_RECHARGE]         = BattleScript_MoveEffectSleep,
-    [MOVE_EFFECT_RAGE]             = BattleScript_MoveEffectSleep,
+    [MOVE_EFFECT_UNUSED]                  = BattleScript_MoveEffectSleep,
     [MOVE_EFFECT_STEAL_ITEM]       = BattleScript_MoveEffectSleep,
     [MOVE_EFFECT_PREVENT_ESCAPE]   = BattleScript_MoveEffectSleep,
     [MOVE_EFFECT_NIGHTMARE]        = BattleScript_MoveEffectSleep,
@@ -2731,10 +2731,6 @@ void SetMoveEffect(bool8 primary, u8 certain)
                 gLockedMoves[gEffectBattler] = gCurrentMove;
                 gBattlescriptCurrInstr++;
                 break;
-            case MOVE_EFFECT_RAGE:
-                gBattleMons[gBattlerAttacker].status2 |= STATUS2_RAGE;
-                gBattlescriptCurrInstr++;
-                break;
             case MOVE_EFFECT_STEAL_ITEM:
                 {
                     if (gBattleTypeFlags & BATTLE_TYPE_TRAINER_HILL)
@@ -2882,6 +2878,7 @@ void SetMoveEffect(bool8 primary, u8 certain)
                     gLastUsedItem = gBattleMons[gEffectBattler].item;
                     gBattleMons[gEffectBattler].item = ITEM_NONE;
                     gWishFutureKnock.knockedOffMons[side] |= gBitTable[gBattlerPartyIndexes[gEffectBattler]];
+                    gBattleScripting.dmgMultiplier = 1.5;
 
                     BattleScriptPush(gBattlescriptCurrInstr + 1);
                     gBattlescriptCurrInstr = BattleScript_KnockedOff;
@@ -7955,10 +7952,11 @@ static void Cmd_dmgtolevel(void)
 static void Cmd_psywavedamageeffect(void)
 {
     s32 randDamage;
-
-    while ((randDamage = Random() % 16) > 10);
-
-    randDamage *= 10;
+    const u32 MAX_ACCEPTABLE = 65448;
+    do {
+        randDamage = Random();
+    } while (randDamage >= MAX_ACCEPTABLE);
+    randDamage %= 101;
     gBattleMoveDamage = gBattleMons[gBattlerAttacker].level * (randDamage + 50) / 100;
     gBattlescriptCurrInstr++;
 }
@@ -8219,7 +8217,6 @@ static void Cmd_copymovepermanently(void)
 static bool8 IsTwoTurnsMove(u16 move)
 {
     if (gBattleMoves[move].effect == EFFECT_SKULL_BASH
-     || gBattleMoves[move].effect == EFFECT_RAZOR_WIND
      || gBattleMoves[move].effect == EFFECT_SKY_ATTACK
      || gBattleMoves[move].effect == EFFECT_SOLAR_BEAM
      || gBattleMoves[move].effect == EFFECT_SEMI_INVULNERABLE
@@ -8249,7 +8246,6 @@ static u8 AttacksThisTurn(u8 battler, u16 move) // Note: returns 1 if it's a cha
         return 2;
 
     if (gBattleMoves[move].effect == EFFECT_SKULL_BASH
-     || gBattleMoves[move].effect == EFFECT_RAZOR_WIND
      || gBattleMoves[move].effect == EFFECT_SKY_ATTACK
      || gBattleMoves[move].effect == EFFECT_SOLAR_BEAM
      || gBattleMoves[move].effect == EFFECT_SEMI_INVULNERABLE
@@ -8911,13 +8907,6 @@ static void Cmd_recoverbasedonsunlight(void)
 
 static void Cmd_hiddenpowercalc(void)
 {
-    u8 powerBits = ((gBattleMons[gBattlerAttacker].hpIV & 2) >> 1)
-                 | ((gBattleMons[gBattlerAttacker].attackIV & 2) << 0)
-                 | ((gBattleMons[gBattlerAttacker].defenseIV & 2) << 1)
-                 | ((gBattleMons[gBattlerAttacker].speedIV & 2) << 2)
-                 | ((gBattleMons[gBattlerAttacker].spAttackIV & 2) << 3)
-                 | ((gBattleMons[gBattlerAttacker].spDefenseIV & 2) << 4);
-
     u8 typeBits  = ((gBattleMons[gBattlerAttacker].hpIV & 1) << 0)
                  | ((gBattleMons[gBattlerAttacker].attackIV & 1) << 1)
                  | ((gBattleMons[gBattlerAttacker].defenseIV & 1) << 2)
@@ -8925,7 +8914,7 @@ static void Cmd_hiddenpowercalc(void)
                  | ((gBattleMons[gBattlerAttacker].spAttackIV & 1) << 4)
                  | ((gBattleMons[gBattlerAttacker].spDefenseIV & 1) << 5);
 
-    gDynamicBasePower = (40 * powerBits) / 63 + 30;
+    gDynamicBasePower = 60;
 
     // Subtract 3 instead of 1 below because 2 types are excluded (TYPE_NORMAL and TYPE_MYSTERY)
     // The final + 1 skips past Normal, and the following conditional skips TYPE_MYSTERY
